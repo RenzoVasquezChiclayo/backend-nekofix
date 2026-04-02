@@ -11,6 +11,7 @@ import { BrandsModule } from './modules/brands/brands.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { PhoneModelsModule } from './modules/phone-models/phone-models.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { AppController } from './app.controller';
@@ -27,6 +28,7 @@ import { AppController } from './app.controller';
     BrandsModule,
     CategoriesModule,
     ProductsModule,
+    PhoneModelsModule,
     InventoryModule,
     LeadsModule,
     DashboardModule,
