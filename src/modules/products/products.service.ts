@@ -1,19 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ProductCondition, ProductType } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import {
   serializeProduct,
   serializeProducts,
 } from '../../common/utils/serialize-json';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { normalizeProductImagesForWrite } from './utils/product-images.util';
 
 const productInclude = {
   brand: true,
   category: true,
   model: true,
+  productImages: {
+    orderBy: { sortOrder: 'asc' as const },
+  },
 } as const;
 
 @Injectable()
@@ -93,43 +97,102 @@ export class ProductsService {
     return serializeProduct(product as unknown as Record<string, unknown>);
   }
 
+  /** Detalle por id (misma forma que findBySlug; útil para admin / futuras rutas). */
+  async findOne(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: productInclude,
+    });
+    if (!product) {
+      throw new NotFoundException('Producto no encontrado');
+    }
+    return serializeProduct(product as unknown as Record<string, unknown>);
+  }
+
   async create(dto: CreateProductDto) {
+    const { images, ...data } = dto;
+    const normalized = images?.length
+      ? normalizeProductImagesForWrite(images)
+      : [];
+
     const created = await this.prisma.product.create({
       data: {
-        name: dto.name,
-        slug: dto.slug,
-        sku: dto.sku,
-        description: dto.description,
-        price: dto.price,
-        comparePrice: dto.comparePrice,
-        type: dto.type,
-        condition: dto.condition,
-        stock: dto.stock ?? 0,
-        minStock: dto.minStock ?? 0,
-        brandId: dto.brandId,
-        categoryId: dto.categoryId,
-        modelId: dto.modelId,
-        storage: dto.storage,
-        color: dto.color,
-        batteryHealth: dto.batteryHealth,
-        grade: dto.grade,
-        isFeatured: dto.isFeatured ?? false,
-        isPublished: dto.isPublished ?? false,
-        seoTitle: dto.seoTitle,
-        seoDescription: dto.seoDescription,
+        name: data.name,
+        slug: data.slug,
+        sku: data.sku,
+        description: data.description,
+        price: data.price,
+        comparePrice: data.comparePrice,
+        type: data.type,
+        condition: data.condition,
+        stock: data.stock ?? 0,
+        minStock: data.minStock ?? 0,
+        brandId: data.brandId,
+        categoryId: data.categoryId,
+        modelId: data.modelId,
+        storage: data.storage,
+        color: data.color,
+        batteryHealth: data.batteryHealth,
+        grade: data.grade,
+        isFeatured: data.isFeatured ?? false,
+        isPublished: data.isPublished ?? false,
+        seoTitle: data.seoTitle,
+        seoDescription: data.seoDescription,
+        productImages: normalized.length
+          ? {
+              create: normalized.map((img) => ({
+                url: img.url,
+                alt: img.alt,
+                sortOrder: img.sortOrder,
+                isPrimary: img.isPrimary,
+              })),
+            }
+          : undefined,
       },
       include: productInclude,
     });
+
     return serializeProduct(created as unknown as Record<string, unknown>);
   }
 
   async update(id: string, dto: UpdateProductDto) {
     await this.ensureExists(id);
-    const updated = await this.prisma.product.update({
+    const { images, ...rest } = dto;
+
+    if (images === undefined) {
+      const updated = await this.prisma.product.update({
+        where: { id },
+        data: rest as Prisma.ProductUpdateInput,
+        include: productInclude,
+      });
+      return serializeProduct(updated as unknown as Record<string, unknown>);
+    }
+
+    const normalized = images.length
+      ? normalizeProductImagesForWrite(images)
+      : [];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productImage.deleteMany({ where: { productId: id } });
+      await tx.product.update({
+        where: { id },
+        data: rest as Prisma.ProductUpdateInput,
+      });
+      if (normalized.length) {
+        await tx.productImage.createMany({
+          data: normalized.map((img) => ({
+            productId: id,
+            url: img.url,
+            alt: img.alt,
+            sortOrder: img.sortOrder,
+            isPrimary: img.isPrimary,
+          })),
+        });
+      }
+    });
+
+    const updated = await this.prisma.product.findUniqueOrThrow({
       where: { id },
-      data: {
-        ...dto,
-      },
       include: productInclude,
     });
     return serializeProduct(updated as unknown as Record<string, unknown>);

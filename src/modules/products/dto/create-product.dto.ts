@@ -1,6 +1,7 @@
 import { ProductCondition, ProductType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -11,7 +12,9 @@ import {
   Matches,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { CreateProductImageDto } from './create-product-image.dto';
 
 export class CreateProductDto {
   @IsString()
@@ -110,4 +113,10 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   seoDescription?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductImageDto)
+  images?: CreateProductImageDto[];
 }

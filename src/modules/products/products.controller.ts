@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,8 +9,11 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -18,6 +22,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUserPayload } from '../../common/interfaces/jwt-user-payload.interface';
 import { Message } from '../../common/decorators/message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { productsUploadMulterOptions } from './config/products-upload.multer';
 import { CreateProductDto } from './dto/create-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -53,6 +58,25 @@ export class ProductsController {
   ) {
     const isAdmin = req.user?.role === UserRole.ADMIN;
     return this.productsService.findBySlug(slug, { includeUnpublished: !!isAdmin });
+  }
+
+  @Post('upload-image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file', productsUploadMulterOptions()))
+  @Message('Imagen subida correctamente')
+  uploadImage(
+    @UploadedFile()
+    file:
+      | { filename: string; originalname: string; mimetype: string; size: number }
+      | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Archivo requerido');
+    }
+    return {
+      url: `/uploads/products/${file.filename}`,
+    };
   }
 
   @Post()

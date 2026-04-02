@@ -14,6 +14,11 @@ export function serializeProduct<T extends Record<string, unknown>>(
   if (p.price != null) p.price = decimalToNumber(p.price as Decimal);
   if (p.comparePrice != null)
     p.comparePrice = decimalToNumber(p.comparePrice as Decimal);
+  if (Array.isArray(p.productImages)) {
+    p.productImages = (
+      p.productImages as Record<string, unknown>[]
+    ).map((img) => ({ ...img }));
+  }
   return p as T;
 }
 
