@@ -30,6 +30,11 @@ export class QueryPhoneModelDto {
   @IsString()
   brandId?: string;
 
+  /** @deprecated Preferir `brandId`. Slug de marca (compat. panel legacy). */
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
   @IsOptional()
   @IsIn(['createdAt', 'name'])
   sortBy?: 'createdAt' | 'name';

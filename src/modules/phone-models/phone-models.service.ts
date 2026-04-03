@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
+import { resolveLegacyBrandCategoryModelFilters } from '../../common/utils/resolve-legacy-admin-filters';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePhoneModelDto } from './dto/create-phone-model.dto';
 import { QueryPhoneModelDto } from './dto/query-phone-model.dto';
@@ -21,8 +22,14 @@ export class PhoneModelsService {
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
 
+    const filters = await resolveLegacyBrandCategoryModelFilters(this.prisma, {
+      brandId: query.brandId,
+      brand: query.brand,
+    });
+
     const where: Prisma.PhoneModelWhereInput = {
-      ...(query.brandId ? { brandId: query.brandId } : {}),
+      ...(filters.legacySlugNotFound ? { id: { in: [] } } : {}),
+      ...(filters.brandId ? { brandId: filters.brandId } : {}),
       ...(query.search
         ? {
             OR: [
@@ -65,7 +72,7 @@ export class PhoneModelsService {
     });
 
     if (!model) {
-      throw new NotFoundException('Modelo de telÈfono no encontrado');
+      throw new NotFoundException('Modelo de telùfono no encontrado');
     }
 
     return model;
@@ -120,7 +127,7 @@ export class PhoneModelsService {
 
     if (relatedProducts > 0) {
       throw new BadRequestException(
-        'No se puede eliminar el modelo porque est· asociado a productos.',
+        'No se puede eliminar el modelo porque estù asociado a productos.',
       );
     }
 
@@ -147,7 +154,7 @@ export class PhoneModelsService {
     });
 
     if (!model) {
-      throw new NotFoundException('Modelo de telÈfono no encontrado');
+      throw new NotFoundException('Modelo de telùfono no encontrado');
     }
   }
 

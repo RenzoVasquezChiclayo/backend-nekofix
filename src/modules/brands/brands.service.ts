@@ -16,7 +16,10 @@ export class BrandsService {
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
 
+    const exactSlug = query.slug?.trim() || query.brand?.trim();
+
     const where: Prisma.BrandWhereInput = {
+      ...(exactSlug ? { slug: exactSlug } : {}),
       ...(query.search
         ? {
             OR: [

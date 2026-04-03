@@ -26,6 +26,16 @@ export class QueryCategoryDto {
   @IsString()
   search?: string;
 
+  /** Filtro exacto por slug de categoría. */
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
+  /** @deprecated Preferir `slug`. Alias legacy usado por algunos paneles. */
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @IsOptional()
   @IsIn(['createdAt', 'name'])
   sortBy?: 'createdAt' | 'name';

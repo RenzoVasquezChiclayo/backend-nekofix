@@ -87,18 +87,24 @@ export class InventoryService {
     }
   }
 
-  async history(productId: string, query: PaginationQueryDto) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
+  async history(productIdOrSlug: string, query: PaginationQueryDto) {
+    let product = await this.prisma.product.findUnique({
+      where: { id: productIdOrSlug },
       select: { id: true },
     });
+    if (!product) {
+      product = await this.prisma.product.findUnique({
+        where: { slug: productIdOrSlug },
+        select: { id: true },
+      });
+    }
     if (!product) {
       throw new NotFoundException('Producto no encontrado');
     }
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const where = { productId };
+    const where = { productId: product.id };
 
     const [rows, total] = await Promise.all([
       this.prisma.inventoryMovement.findMany({

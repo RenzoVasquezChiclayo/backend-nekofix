@@ -36,6 +36,21 @@ export class QueryProductDto {
   @IsString()
   modelId?: string;
 
+  /** @deprecated Preferir `brandId`. Slug de marca (compat. panel legacy). */
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  /** @deprecated Preferir `categoryId`. Slug de categoría (compat. panel legacy). */
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  /** @deprecated Preferir `modelId`. Slug de modelo (compat. panel legacy). */
+  @IsOptional()
+  @IsString()
+  model?: string;
+
   @IsOptional()
   @IsEnum(ProductCondition)
   condition?: ProductCondition;
@@ -55,4 +70,12 @@ export class QueryProductDto {
   @IsOptional()
   @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc';
+
+  @IsOptional()
+  @Type(() => Boolean)
+  featured?: boolean;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  isFeatured?: boolean;
 }

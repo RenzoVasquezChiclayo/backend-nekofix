@@ -26,6 +26,16 @@ export class QueryBrandDto {
   @IsString()
   search?: string;
 
+  /** Filtro exacto por slug de marca. */
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
+  /** @deprecated Preferir `slug`. Alias legacy usado por algunos paneles. */
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
   @IsOptional()
   @IsIn(['createdAt', 'name'])
   sortBy?: 'createdAt' | 'name';

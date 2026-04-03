@@ -16,7 +16,10 @@ export class CategoriesService {
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
 
+    const exactSlug = query.slug?.trim() || query.category?.trim();
+
     const where: Prisma.CategoryWhereInput = {
+      ...(exactSlug ? { slug: exactSlug } : {}),
       ...(query.search
         ? {
             OR: [

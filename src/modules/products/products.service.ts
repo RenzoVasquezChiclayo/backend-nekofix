@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
+import { resolveLegacyBrandCategoryModelFilters } from '../../common/utils/resolve-legacy-admin-filters';
 import {
   serializeProduct,
   serializeProducts,
@@ -20,9 +21,10 @@ const productInclude = {
   },
 } as const;
 
+
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findAll(
     query: QueryProductDto,
@@ -39,21 +41,39 @@ export class ProductsService {
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
 
+    const featured =
+      query.featured !== undefined
+        ? query.featured
+        : query.isFeatured;
+
+    const filters = await resolveLegacyBrandCategoryModelFilters(this.prisma, {
+      brandId: query.brandId,
+      brand: query.brand,
+      categoryId: query.categoryId,
+      category: query.category,
+      modelId: query.modelId,
+      model: query.model,
+    });
+
     const where: Prisma.ProductWhereInput = {
       ...(!options.includeUnpublished ? { isPublished: true } : {}),
-      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
-      ...(query.brandId ? { brandId: query.brandId } : {}),
-      ...(query.modelId ? { modelId: query.modelId } : {}),
+      ...(filters.legacySlugNotFound ? { id: { in: [] } } : {}),
+      ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+      ...(filters.brandId ? { brandId: filters.brandId } : {}),
+      ...(filters.modelId ? { modelId: filters.modelId } : {}),
       ...(query.condition ? { condition: query.condition } : {}),
       ...(query.type ? { type: query.type } : {}),
+      ...(featured !== undefined
+        ? { isFeatured: featured }
+        : {}),
       ...(query.search
         ? {
-            OR: [
-              { name: { contains: query.search, mode: 'insensitive' } },
-              { description: { contains: query.search, mode: 'insensitive' } },
-              { sku: { contains: query.search, mode: 'insensitive' } },
-            ],
-          }
+          OR: [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { description: { contains: query.search, mode: 'insensitive' } },
+            { sku: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }
         : {}),
     };
 
@@ -147,13 +167,13 @@ export class ProductsService {
         seoDescription: data.seoDescription,
         productImages: normalized.length
           ? {
-              create: normalized.map((img) => ({
-                url: img.url,
-                alt: img.alt,
-                sortOrder: img.sortOrder,
-                isPrimary: img.isPrimary,
-              })),
-            }
+            create: normalized.map((img) => ({
+              url: img.url,
+              alt: img.alt,
+              sortOrder: img.sortOrder,
+              isPrimary: img.isPrimary,
+            })),
+          }
           : undefined,
       },
       include: productInclude,
