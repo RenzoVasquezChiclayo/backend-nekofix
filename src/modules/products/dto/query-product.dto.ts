@@ -33,6 +33,10 @@ export class QueryProductDto {
   brandId?: string;
 
   @IsOptional()
+  @IsString()
+  modelId?: string;
+
+  @IsOptional()
   @IsEnum(ProductCondition)
   condition?: ProductCondition;
 

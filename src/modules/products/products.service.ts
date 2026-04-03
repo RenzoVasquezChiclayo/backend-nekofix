@@ -28,8 +28,14 @@ export class ProductsService {
     query: QueryProductDto,
     options: { includeUnpublished: boolean },
   ) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    /** Catálogo público: 12 por página. Admin (borradores): 20 por defecto. */
+    const defaultLimit = options.includeUnpublished ? 20 : 12;
+    const rawPage = query.page ?? 1;
+    const rawLimit = query.limit ?? defaultLimit;
+    const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1;
+    const limit = Number.isFinite(rawLimit) && rawLimit >= 1 && rawLimit <= 100
+      ? Math.floor(rawLimit)
+      : defaultLimit;
     const sortBy = query.sortBy ?? 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
 
@@ -37,6 +43,7 @@ export class ProductsService {
       ...(!options.includeUnpublished ? { isPublished: true } : {}),
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.brandId ? { brandId: query.brandId } : {}),
+      ...(query.modelId ? { modelId: query.modelId } : {}),
       ...(query.condition ? { condition: query.condition } : {}),
       ...(query.type ? { type: query.type } : {}),
       ...(query.search
