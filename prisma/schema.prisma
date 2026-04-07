@@ -34,6 +34,13 @@ enum InventoryMovementType {
   RETURN
 }
 
+enum ExternalReviewSource {
+  GOOGLE_MAPS
+  TRUSTPILOT
+  FACEBOOK
+  INTERNAL
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -159,4 +166,28 @@ model Lead {
   total     Decimal  @db.Decimal(12, 2)
   phone     String?
   createdAt DateTime @default(now())
+}
+
+/// Reseñas agregadas desde fuentes externas (Google, Trustpilot, etc.).
+model ExternalReview {
+  id           String               @id @default(uuid())
+  source       ExternalReviewSource
+  authorName   String
+  authorPhoto  String?
+  rating       Int
+  text         String               @db.Text
+  relativeTime String?
+  /// Para Google se fija con `time` de la API; otras fuentes pueden usar el default.
+  createdAt    DateTime               @default(now())
+
+  @@index([source, createdAt(sort: Desc)])
+}
+
+/// Totales oficiales devueltos por la API del proveedor (p. ej. rating y user_ratings_total de Google).
+model ExternalReviewSummary {
+  source         ExternalReviewSource @id
+  averageRating  Decimal?             @db.Decimal(3, 2)
+  totalReviews   Int?
+  lastSyncedAt   DateTime?
+  updatedAt      DateTime             @updatedAt
 }

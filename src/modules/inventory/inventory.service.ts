@@ -1,16 +1,20 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InventoryMovementType } from '@prisma/client';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
+import { isUuidString } from '../../common/utils/is-uuid-string';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryMoveDto } from './dto/inventory-move.dto';
 
 @Injectable()
 export class InventoryService {
+  private readonly logger = new Logger(InventoryService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async move(dto: InventoryMoveDto, adminId: string) {
@@ -18,6 +22,9 @@ export class InventoryService {
       where: { id: dto.productId },
     });
     if (!product) {
+      this.logger.warn(
+        `Movimiento de inventario: Producto no encontrado por ID: ${dto.productId}`,
+      );
       throw new NotFoundException('Producto no encontrado');
     }
 
@@ -88,17 +95,29 @@ export class InventoryService {
   }
 
   async history(productIdOrSlug: string, query: PaginationQueryDto) {
+    const segment = productIdOrSlug.trim();
     let product = await this.prisma.product.findUnique({
-      where: { id: productIdOrSlug },
+      where: { id: segment },
       select: { id: true },
     });
     if (!product) {
       product = await this.prisma.product.findUnique({
-        where: { slug: productIdOrSlug },
+        where: { slug: segment },
         select: { id: true },
       });
+      if (product && !isUuidString(segment)) {
+        this.logger.warn(
+          `Historial de inventario resuelto por slug; en admin usar UUID de producto (segmento=${segment})`,
+        );
+      }
     }
     if (!product) {
+      const hint = isUuidString(segment)
+        ? 'UUID sin coincidencia en base de datos'
+        : 'ni id ni slug coinciden';
+      this.logger.warn(
+        `Historial de inventario: producto no encontrado (${hint}): ${segment}`,
+      );
       throw new NotFoundException('Producto no encontrado');
     }
 

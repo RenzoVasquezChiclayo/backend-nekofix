@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -28,6 +29,15 @@ export class InventoryController {
   @Message('Movimiento de inventario registrado')
   move(@Body() dto: InventoryMoveDto, @CurrentUser() user: JwtUserPayload) {
     return this.inventoryService.move(dto, user.id);
+  }
+
+  @Get('history/id/:productId')
+  @Message('Historial de inventario obtenido')
+  historyByProductId(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.inventoryService.history(productId, query);
   }
 
   @Get('history/:productId')

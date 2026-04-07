@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -29,9 +30,21 @@ export class PhoneModelsController {
     return this.phoneModelsService.findAll(query);
   }
 
+  @Get('slug/:slug')
+  @Message('Modelo de teléfono obtenido')
+  findBySlug(@Param('slug') slug: string) {
+    return this.phoneModelsService.findBySlug(slug);
+  }
+
+  @Get('id/:id')
+  @Message('Modelo de teléfono obtenido')
+  findOneByExplicitId(@Param('id', ParseUUIDPipe) id: string) {
+    return this.phoneModelsService.findOne(id);
+  }
+
   @Get(':id')
   @Message('Modelo de teléfono obtenido')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.phoneModelsService.findOne(id);
   }
 
@@ -47,7 +60,10 @@ export class PhoneModelsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Message('Modelo de teléfono actualizado correctamente')
-  update(@Param('id') id: string, @Body() dto: UpdatePhoneModelDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePhoneModelDto,
+  ) {
     return this.phoneModelsService.update(id, dto);
   }
 
@@ -55,7 +71,7 @@ export class PhoneModelsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Message('Modelo de teléfono eliminado correctamente')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.phoneModelsService.remove(id);
   }
 }

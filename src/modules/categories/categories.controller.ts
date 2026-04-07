@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -29,9 +30,21 @@ export class CategoriesController {
     return this.categoriesService.findAll(query);
   }
 
+  @Get('slug/:slug')
+  @Message('Categoría obtenida')
+  findBySlug(@Param('slug') slug: string) {
+    return this.categoriesService.findBySlug(slug);
+  }
+
+  @Get('id/:id')
+  @Message('Categoría obtenida')
+  findOneByExplicitId(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categoriesService.findOne(id);
+  }
+
   @Get(':id')
   @Message('Categoría obtenida')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.findOne(id);
   }
 
@@ -47,7 +60,10 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Message('Categoría actualizada correctamente')
-  update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
     return this.categoriesService.update(id, dto);
   }
 
@@ -55,7 +71,7 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Message('Categoría eliminada correctamente')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.remove(id);
   }
 }

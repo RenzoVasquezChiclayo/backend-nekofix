@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { resolveLegacyBrandCategoryModelFilters } from '../../common/utils/resolve-legacy-admin-filters';
@@ -24,7 +24,9 @@ const productInclude = {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) { }
+  private readonly logger = new Logger(ProductsService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(
     query: QueryProductDto,
@@ -57,6 +59,7 @@ export class ProductsService {
 
     const where: Prisma.ProductWhereInput = {
       ...(!options.includeUnpublished ? { isPublished: true } : {}),
+      ...(query.id ? { id: query.id } : {}),
       ...(filters.legacySlugNotFound ? { id: { in: [] } } : {}),
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
       ...(filters.brandId ? { brandId: filters.brandId } : {}),
@@ -116,21 +119,35 @@ export class ProductsService {
       include: productInclude,
     });
     if (!product) {
+      this.logger.warn(`Producto no encontrado por slug: ${slug}`);
       throw new NotFoundException('Producto no encontrado');
     }
     if (!product.isPublished && !options.includeUnpublished) {
+      this.logger.warn(
+        `Producto ${product.id} no publicado: acceso por slug denegado sin permisos de administrador`,
+      );
       throw new NotFoundException('Producto no encontrado');
     }
     return serializeProduct(product as unknown as Record<string, unknown>);
   }
 
-  /** Detalle por id (misma forma que findBySlug; útil para admin / futuras rutas). */
-  async findOne(id: string) {
+  /**
+   * Detalle por id (admin y catálogo cuando el segmento de ruta es UUID).
+   * Respeta visibilidad de borradores igual que findBySlug.
+   */
+  async findOne(id: string, options: { includeUnpublished: boolean }) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: productInclude,
     });
     if (!product) {
+      this.logger.warn(`Producto no encontrado por ID: ${id}`);
+      throw new NotFoundException('Producto no encontrado');
+    }
+    if (!product.isPublished && !options.includeUnpublished) {
+      this.logger.warn(
+        `Producto no encontrado por ID (borrador sin JWT admin): ${id}`,
+      );
       throw new NotFoundException('Producto no encontrado');
     }
     return serializeProduct(product as unknown as Record<string, unknown>);
@@ -237,6 +254,7 @@ export class ProductsService {
       select: { id: true },
     });
     if (!exists) {
+      this.logger.warn(`Producto no encontrado por ID: ${id}`);
       throw new NotFoundException('Producto no encontrado');
     }
   }

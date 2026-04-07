@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,6 +8,8 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
+  private readonly logger = new Logger(CategoriesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryCategoryDto) {
@@ -46,9 +48,19 @@ export class CategoriesService {
     return createPaginatedResponse(rows, page, limit, total);
   }
 
+  async findBySlug(slug: string) {
+    const category = await this.prisma.category.findUnique({ where: { slug } });
+    if (!category) {
+      this.logger.warn(`Categoría no encontrada por slug: ${slug}`);
+      throw new NotFoundException('Categoría no encontrada');
+    }
+    return category;
+  }
+
   async findOne(id: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) {
+      this.logger.warn(`Categoría no encontrada por ID: ${id}`);
       throw new NotFoundException('Categoría no encontrada');
     }
     return category;

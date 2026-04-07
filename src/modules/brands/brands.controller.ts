@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -29,9 +30,22 @@ export class BrandsController {
     return this.brandsService.findAll(query);
   }
 
+  @Get('slug/:slug')
+  @Message('Marca obtenida')
+  findBySlug(@Param('slug') slug: string) {
+    return this.brandsService.findBySlug(slug);
+  }
+
+  /** Ruta explícita por UUID (misma respuesta que GET /:id; prioridad sobre slugs ambiguos). */
+  @Get('id/:id')
+  @Message('Marca obtenida')
+  findOneByExplicitId(@Param('id', ParseUUIDPipe) id: string) {
+    return this.brandsService.findOne(id);
+  }
+
   @Get(':id')
   @Message('Marca obtenida')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.brandsService.findOne(id);
   }
 
@@ -47,7 +61,10 @@ export class BrandsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Message('Marca actualizada correctamente')
-  update(@Param('id') id: string, @Body() dto: UpdateBrandDto) {
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateBrandDto,
+  ) {
     return this.brandsService.update(id, dto);
   }
 
@@ -55,7 +72,7 @@ export class BrandsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Message('Marca eliminada correctamente')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.brandsService.remove(id);
   }
 }

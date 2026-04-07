@@ -6,11 +6,12 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
 } from 'class-validator';
 
 export class InventoryMoveDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   productId: string;
 

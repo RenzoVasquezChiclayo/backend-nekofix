@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import configuration from './config/configuration';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
@@ -14,6 +15,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { PhoneModelsModule } from './modules/phone-models/phone-models.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
+import { GoogleReviewsModule } from './modules/google-reviews/google-reviews.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -22,6 +24,7 @@ import { AppController } from './app.controller';
       isGlobal: true,
       load: [configuration],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -32,6 +35,7 @@ import { AppController } from './app.controller';
     InventoryModule,
     LeadsModule,
     DashboardModule,
+    GoogleReviewsModule,
   ],
   controllers: [AppController],
   providers: [

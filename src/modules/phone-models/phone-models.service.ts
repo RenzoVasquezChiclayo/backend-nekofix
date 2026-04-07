@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -14,6 +15,14 @@ import { UpdatePhoneModelDto } from './dto/update-phone-model.dto';
 
 @Injectable()
 export class PhoneModelsService {
+  private static readonly modelInclude = {
+    brand: {
+      select: { id: true, name: true, slug: true, logo: true },
+    },
+  } as const;
+
+  private readonly logger = new Logger(PhoneModelsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryPhoneModelDto) {
@@ -49,11 +58,7 @@ export class PhoneModelsService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy,
-        include: {
-          brand: {
-            select: { id: true, name: true, slug: true, logo: true },
-          },
-        },
+        include: PhoneModelsService.modelInclude,
       }),
       this.prisma.phoneModel.count({ where }),
     ]);
@@ -61,18 +66,29 @@ export class PhoneModelsService {
     return createPaginatedResponse(rows, page, limit, total);
   }
 
-  async findOne(id: string) {
+  async findBySlug(slug: string) {
     const model = await this.prisma.phoneModel.findUnique({
-      where: { id },
-      include: {
-        brand: {
-          select: { id: true, name: true, slug: true, logo: true },
-        },
-      },
+      where: { slug },
+      include: PhoneModelsService.modelInclude,
     });
 
     if (!model) {
-      throw new NotFoundException('Modelo de telùfono no encontrado');
+      this.logger.warn(`Modelo de tel?fono no encontrado por slug: ${slug}`);
+      throw new NotFoundException('Modelo de tel?fono no encontrado');
+    }
+
+    return model;
+  }
+
+  async findOne(id: string) {
+    const model = await this.prisma.phoneModel.findUnique({
+      where: { id },
+      include: PhoneModelsService.modelInclude,
+    });
+
+    if (!model) {
+      this.logger.warn(`Modelo de tel?fono no encontrado por ID: ${id}`);
+      throw new NotFoundException('Modelo de tel?fono no encontrado');
     }
 
     return model;
@@ -88,11 +104,7 @@ export class PhoneModelsService {
         slug: dto.slug,
         brandId: dto.brandId,
       },
-      include: {
-        brand: {
-          select: { id: true, name: true, slug: true, logo: true },
-        },
-      },
+      include: PhoneModelsService.modelInclude,
     });
   }
 
@@ -110,11 +122,7 @@ export class PhoneModelsService {
     return this.prisma.phoneModel.update({
       where: { id },
       data: dto,
-      include: {
-        brand: {
-          select: { id: true, name: true, slug: true, logo: true },
-        },
-      },
+      include: PhoneModelsService.modelInclude,
     });
   }
 
@@ -127,7 +135,7 @@ export class PhoneModelsService {
 
     if (relatedProducts > 0) {
       throw new BadRequestException(
-        'No se puede eliminar el modelo porque estù asociado a productos.',
+        'No se puede eliminar el modelo porque est? asociado a productos.',
       );
     }
 
@@ -154,7 +162,8 @@ export class PhoneModelsService {
     });
 
     if (!model) {
-      throw new NotFoundException('Modelo de telùfono no encontrado');
+      this.logger.warn(`Modelo de telÈfono no encontrado por ID: ${id}`);
+      throw new NotFoundException('Modelo de telÈfono no encontrado');
     }
   }
 

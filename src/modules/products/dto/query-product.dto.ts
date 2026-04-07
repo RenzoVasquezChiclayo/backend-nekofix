@@ -6,11 +6,17 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
 } from 'class-validator';
 
 export class QueryProductDto {
+  /** Filtro por UUID (p. ej. panel admin al enlazar listado con un producto). */
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

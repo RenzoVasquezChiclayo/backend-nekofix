@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -8,6 +8,8 @@ import { UpdateBrandDto } from './dto/update-brand.dto';
 
 @Injectable()
 export class BrandsService {
+  private readonly logger = new Logger(BrandsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryBrandDto) {
@@ -46,9 +48,19 @@ export class BrandsService {
     return createPaginatedResponse(rows, page, limit, total);
   }
 
+  async findBySlug(slug: string) {
+    const brand = await this.prisma.brand.findUnique({ where: { slug } });
+    if (!brand) {
+      this.logger.warn(`Marca no encontrada por slug: ${slug}`);
+      throw new NotFoundException('Marca no encontrada');
+    }
+    return brand;
+  }
+
   async findOne(id: string) {
     const brand = await this.prisma.brand.findUnique({ where: { id } });
     if (!brand) {
+      this.logger.warn(`Marca no encontrada por ID: ${id}`);
       throw new NotFoundException('Marca no encontrada');
     }
     return brand;
