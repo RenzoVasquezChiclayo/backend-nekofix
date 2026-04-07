@@ -1,5 +1,6 @@
 import { ProductCondition, ProductType } from '@prisma/client';
 import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsIn,
@@ -64,6 +65,15 @@ export class QueryProductDto {
   @IsOptional()
   @IsEnum(ProductType)
   type?: ProductType;
+
+  /** Filtro por grado visual (productos usados). Ej.: `?grade=A` o `grade=A%2B` */
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value == null || value === '') return undefined;
+    return String(value).trim().toUpperCase();
+  })
+  @IsIn(['A+', 'A', 'B'])
+  grade?: string;
 
   @IsOptional()
   @IsString()

@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -12,6 +13,7 @@ import {
   Matches,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { CreateProductImageDto } from './create-product-image.dto';
@@ -92,9 +94,16 @@ export class CreateProductDto {
   @Type(() => Number)
   batteryHealth?: number;
 
+  /** Obligatorio si `type === USED` (A+, A, B). Ignorado en persistencia para NEW/ACCESSORY (se fuerza null en servicio). */
+  @ValidateIf((o: CreateProductDto) => o.type === ProductType.USED)
+  @IsNotEmpty({ message: 'El grado es obligatorio para productos usados (A+, A o B).' })
+  @ValidateIf((o: CreateProductDto) => o.type === ProductType.USED)
+  @IsIn(['A+', 'A', 'B'], {
+    message: 'El grado debe ser A+, A o B.',
+  })
+  @ValidateIf((o: CreateProductDto) => o.type !== ProductType.USED)
   @IsOptional()
-  @IsString()
-  grade?: string;
+  grade?: string | null;
 
   @IsOptional()
   @IsBoolean()

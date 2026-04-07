@@ -11,6 +11,10 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { normalizeProductImagesForWrite } from './utils/product-images.util';
+import {
+  resolveGradeForCreate,
+  resolveGradeForUpdate,
+} from './utils/product-grade.util';
 
 const productInclude = {
   brand: true,
@@ -66,6 +70,7 @@ export class ProductsService {
       ...(filters.modelId ? { modelId: filters.modelId } : {}),
       ...(query.condition ? { condition: query.condition } : {}),
       ...(query.type ? { type: query.type } : {}),
+      ...(query.grade ? { grade: query.grade } : {}),
       ...(featured !== undefined
         ? { isFeatured: featured }
         : {}),
@@ -159,6 +164,8 @@ export class ProductsService {
       ? normalizeProductImagesForWrite(images)
       : [];
 
+    const grade = resolveGradeForCreate(data.type, data.grade);
+
     const created = await this.prisma.product.create({
       data: {
         name: data.name,
@@ -177,7 +184,7 @@ export class ProductsService {
         storage: data.storage,
         color: data.color,
         batteryHealth: data.batteryHealth,
-        grade: data.grade,
+        grade,
         isFeatured: data.isFeatured ?? false,
         isPublished: data.isPublished ?? false,
         seoTitle: data.seoTitle,
@@ -200,13 +207,31 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto) {
-    await this.ensureExists(id);
-    const { images, ...rest } = dto;
+    const existing = await this.prisma.product.findUnique({ where: { id } });
+    if (!existing) {
+      this.logger.warn(`Producto no encontrado por ID: ${id}`);
+      throw new NotFoundException('Producto no encontrado');
+    }
+
+    const { images, grade: gradeFromDto, ...rest } = dto;
+    const gradeSent = Object.prototype.hasOwnProperty.call(dto, 'grade');
+    const nextType = dto.type ?? existing.type;
+    const mergedGrade = resolveGradeForUpdate(
+      nextType,
+      gradeFromDto,
+      existing.grade,
+      gradeSent,
+    );
+
+    const data: Prisma.ProductUpdateInput = {
+      ...(rest as Prisma.ProductUpdateInput),
+      grade: mergedGrade,
+    };
 
     if (images === undefined) {
       const updated = await this.prisma.product.update({
         where: { id },
-        data: rest as Prisma.ProductUpdateInput,
+        data,
         include: productInclude,
       });
       return serializeProduct(updated as unknown as Record<string, unknown>);
@@ -220,7 +245,7 @@ export class ProductsService {
       await tx.productImage.deleteMany({ where: { productId: id } });
       await tx.product.update({
         where: { id },
-        data: rest as Prisma.ProductUpdateInput,
+        data,
       });
       if (normalized.length) {
         await tx.productImage.createMany({
