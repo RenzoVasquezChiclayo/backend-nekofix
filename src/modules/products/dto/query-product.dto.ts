@@ -66,7 +66,7 @@ export class QueryProductDto {
   @IsEnum(ProductType)
   type?: ProductType;
 
-  /** Filtro por grado visual (productos usados). Ej.: `?grade=A` o `grade=A%2B` */
+  /** Filtro por `grade` almacenado (A+, A, B). Ej.: `?grade=A` o `grade=A%2B` */
   @IsOptional()
   @Transform(({ value }) => {
     if (value == null || value === '') return undefined;

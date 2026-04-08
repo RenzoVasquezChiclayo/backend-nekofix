@@ -1,5 +1,5 @@
 import { ProductCondition, ProductType } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -12,6 +12,7 @@ import {
   IsString,
   Matches,
   Max,
+  MaxLength,
   Min,
   ValidateIf,
   ValidateNested,
@@ -83,8 +84,10 @@ export class CreateProductDto {
   @IsString()
   storage?: string;
 
+  /** Nombre legible del acabado (p. ej. para swatches en tienda). Se normaliza en el servicio. */
   @IsOptional()
   @IsString()
+  @MaxLength(120)
   color?: string;
 
   @IsOptional()
@@ -94,16 +97,26 @@ export class CreateProductDto {
   @Type(() => Number)
   batteryHealth?: number;
 
-  /** Obligatorio si `type === USED` (A+, A, B). Ignorado en persistencia para NEW/ACCESSORY (se fuerza null en servicio). */
+  /**
+   * Solo aplica a `ProductType.USED` (A+, A, B). Para NEW/ACCESSORY se ignora en persistencia (`null`).
+   * No depende de `condition`.
+   */
+  @Transform(({ value, obj }: { value: unknown; obj: CreateProductDto }) => {
+    if (obj.type !== ProductType.USED) {
+      return undefined;
+    }
+    if (value == null || value === '') {
+      return value as null | undefined;
+    }
+    return String(value).trim().toUpperCase();
+  })
   @ValidateIf((o: CreateProductDto) => o.type === ProductType.USED)
   @IsNotEmpty({ message: 'El grado es obligatorio para productos usados (A+, A o B).' })
   @ValidateIf((o: CreateProductDto) => o.type === ProductType.USED)
   @IsIn(['A+', 'A', 'B'], {
     message: 'El grado debe ser A+, A o B.',
   })
-  @ValidateIf((o: CreateProductDto) => o.type !== ProductType.USED)
-  @IsOptional()
-  grade?: string | null;
+  grade?: string;
 
   @IsOptional()
   @IsBoolean()

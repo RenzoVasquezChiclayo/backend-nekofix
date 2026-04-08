@@ -21,11 +21,6 @@ export function normalizeProductGrade(
   return t.toUpperCase();
 }
 
-export function parseGradeQuery(raw: string | undefined): string | null {
-  if (raw == null || raw === '') return null;
-  return normalizeProductGrade(raw);
-}
-
 /**
  * Valor a persistir en `Product.grade` según tipo.
  * - NEW / ACCESSORY → siempre `null`
