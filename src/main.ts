@@ -14,21 +14,30 @@ async function bootstrap() {
   app.useStaticAssets(uploadsRoot, { prefix: '/uploads/' });
   const configService = app.get(ConfigService);
 
-  const corsOrigin = configService.get<string | string[]>('cors.origin');
-  const origin =
-    typeof corsOrigin === 'string'
-      ? corsOrigin.split(',').map((o) => o.trim())
-      : (corsOrigin ?? ['http://localhost:3000']);
-
+   const corsOrigin = configService.get<string | string[]>('cors.origin');
+   const origin =
+     typeof corsOrigin === 'string'
+       ? corsOrigin.split(',').map((o) => o.trim())
+       : (corsOrigin ?? ['http://localhost:3000']);
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin,
     credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
   });
-
+  // app.enableCors({
+  //   origin: 'http://localhost:3000',
+  //   credentials: true,
+  //   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  //   allowedHeaders: ['Content-Type', 'Authorization'],
+  //   preflightContinue: false,
+  //   optionsSuccessStatus: 204,
+  // });
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'https://TU-FRONTEND.vercel.app', // 👈 cámbialo por tu dominio real
+    ],
+    credentials: true,
+  });
   // ✅ prefijo global para API
   app.setGlobalPrefix('api');
 
@@ -42,7 +51,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = configService.get<number>('port') ?? 3005;
+  const port = process.env.PORT || configService.get<number>('port') || 3005;
 
   await app.listen(port);
 
