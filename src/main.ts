@@ -76,15 +76,34 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  // 👉 leer variable si existe
   const corsOrigin = configService.get<string>('CORS_ORIGIN');
 
-  const origin = corsOrigin
+  // 👉 construir lista de orígenes permitidos
+  const allowedOrigins = corsOrigin
     ? corsOrigin.split(',').map((o) => o.trim())
     : ['http://localhost:3000'];
 
   app.enableCors({
-    origin,
+    origin: (origin, callback) => {
+      // 👉 permitir requests sin origin (Postman, SSR, etc.)
+      if (!origin) return callback(null, true);
+
+      // 👉 en desarrollo permitir todo
+      if (isDev) return callback(null, true);
+
+      // 👉 en producción validar contra lista
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS bloqueado para: ${origin}`), false);
+    },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.setGlobalPrefix('api');
