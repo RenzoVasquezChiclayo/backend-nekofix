@@ -459,27 +459,27 @@ async function main() {
 
   await seedUsers();
 
-  const [brandBySlug, categoryBySlug] = await Promise.all([
-    seedBrands(),
-    seedCategories(),
-  ]);
+  // const [brandBySlug, categoryBySlug] = await Promise.all([
+  //   seedBrands(),
+  //   seedCategories(),
+  // ]);
 
-  const modelBySlug = await seedPhoneModels(brandBySlug);
-  const productBySlug = await seedProducts(
-    brandBySlug,
-    categoryBySlug,
-    modelBySlug,
-  );
+  // const modelBySlug = await seedPhoneModels(brandBySlug);
+  // const productBySlug = await seedProducts(
+  //   brandBySlug,
+  //   categoryBySlug,
+  //   modelBySlug,
+  // );
 
-  await seedProductImages(productBySlug);
+  // await seedProductImages(productBySlug);
 
   const admin = await prisma.user.findUniqueOrThrow({
     where: { email: 'admin@nekofix.local' },
     select: { id: true },
   });
 
-  await seedInventoryMovements(admin.id, productBySlug);
-  await seedLeads(productBySlug);
+  // await seedInventoryMovements(admin.id, productBySlug);
+  // await seedLeads(productBySlug);
 
   // eslint-disable-next-line no-console
   console.log('--- Seed completado ---');
@@ -492,9 +492,9 @@ async function main() {
     `Cliente demo: cliente@nekofix.local (SEED_CLIENT_PASSWORD o Cliente123!)`,
   );
   // eslint-disable-next-line no-console
-  console.log(
-    `Productos: ${SEED_PRODUCTS.length} | Movimientos seed: ${buildInventoryMovementDefs(SEED_PRODUCTS).length} | Leads: ${SEED_LEADS.length}`,
-  );
+  // console.log(
+  //   `Productos: ${SEED_PRODUCTS.length} | Movimientos seed: ${buildInventoryMovementDefs(SEED_PRODUCTS).length} | Leads: ${SEED_LEADS.length}`,
+  // );
 }
 
 main()
