@@ -1,7 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 
 const ALLOWED_MIME = new Set([
   'image/jpeg',
@@ -14,14 +12,7 @@ const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 export function productsUploadMulterOptions() {
   return {
-    storage: diskStorage({
-      destination: join(process.cwd(), 'uploads', 'products'),
-      filename: (_req, file, cb) => {
-        const ext = extname(file.originalname).toLowerCase();
-        const safe = ALLOWED_EXT.has(ext) ? ext : '.jpg';
-        cb(null, `${randomUUID()}${safe}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (
       _req: unknown,
@@ -32,6 +23,19 @@ export function productsUploadMulterOptions() {
         return cb(
           new BadRequestException(
             'Solo se permiten imágenes JPG, JPEG, PNG o WEBP',
+          ),
+          false,
+        );
+      }
+      const extension = file.originalname.split('.').pop()?.toLowerCase();
+      const normalizedExtension = extension ? `.${extension}` : '';
+      if (
+        normalizedExtension &&
+        !ALLOWED_EXT.has(normalizedExtension)
+      ) {
+        return cb(
+          new BadRequestException(
+            'Extensión no permitida. Usa JPG, JPEG, PNG o WEBP',
           ),
           false,
         );
