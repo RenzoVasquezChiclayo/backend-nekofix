@@ -30,12 +30,21 @@ import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { isUuidString } from '../../common/utils/is-uuid-string';
 import { ProductsService } from './products.service';
+import { CloudinaryService } from '../../common/services/cloudinary.service';
+
+type UploadedProductImage = {
+  buffer: Buffer;
+  originalname: string;
+};
 
 @Controller('products')
 export class ProductsController {
   private readonly logger = new Logger(ProductsController.name);
 
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get('featured')
   @Message('Productos destacados')
@@ -135,17 +144,23 @@ export class ProductsController {
   @Roles(UserRole.ADMIN)
   @UseInterceptors(FileInterceptor('file', productsUploadMulterOptions()))
   @Message('Imagen subida correctamente')
-  uploadImage(
+  async uploadImage(
     @UploadedFile()
-    file:
-      | { filename: string; originalname: string; mimetype: string; size: number }
-      | undefined,
+    file: UploadedProductImage | undefined,
   ) {
     if (!file) {
       throw new BadRequestException('Archivo requerido');
     }
+    if (!file.buffer?.length) {
+      throw new BadRequestException('Archivo inválido');
+    }
+
+    const url = await this.cloudinaryService.uploadProductImage(file.buffer, {
+      filename: file.originalname.split('.').slice(0, -1).join('.') || undefined,
+    });
+
     return {
-      url: `/uploads/products/${file.filename}`,
+      url,
     };
   }
 
