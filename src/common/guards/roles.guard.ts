@@ -23,6 +23,11 @@ export class RolesGuard implements CanActivate {
     if (!user) {
       return false;
     }
+    /** Jerarquía: SUPER_ADMIN cumple cualquier @Roles(...) requerido. */
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+    /** ADMIN u otros: deben coincidir con uno de los roles declarados. */
     return requiredRoles.includes(user.role);
   }
 }

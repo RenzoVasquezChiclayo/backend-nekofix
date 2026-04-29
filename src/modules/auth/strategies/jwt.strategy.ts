@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { UserRole } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtUserPayload } from '../../../common/interfaces/jwt-user-payload.interface';
+import { hasStaffPanelAccess } from '../../../common/utils/user-role.util';
 import { UsersService } from '../../users/users.service';
 
 export interface JwtPayload {
@@ -31,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Token inválido o usuario inactivo');
     }
-    if (user.role !== UserRole.ADMIN) {
+    if (!hasStaffPanelAccess(user.role)) {
       throw new UnauthorizedException('No autorizado');
     }
     return {

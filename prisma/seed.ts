@@ -1,4 +1,9 @@
-import { InventoryMovementType, Prisma, PrismaClient } from '@prisma/client';
+import {
+  InventoryMovementType,
+  Prisma,
+  PrismaClient,
+  UserRole,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
   SEED_BRANDS,
@@ -219,6 +224,40 @@ async function seedUsers() {
   }
   // eslint-disable-next-line no-console
   console.log('Seed users OK');
+}
+
+async function seedSuperAdmin() {
+  const emailRaw = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!emailRaw) {
+    // eslint-disable-next-line no-console
+    console.log(
+      'Seed super admin: omitido (defina SUPER_ADMIN_EMAIL en .env para crear o promover al super administrador)',
+    );
+    return;
+  }
+
+  const passwordRaw =
+    process.env.SUPER_ADMIN_PASSWORD?.trim() || 'SuperAdmin123!';
+  const hash = await bcrypt.hash(passwordRaw, 10);
+
+  await prisma.user.upsert({
+    where: { email: emailRaw },
+    update: {
+      role: UserRole.SUPER_ADMIN,
+      password: hash,
+      isActive: true,
+      name: 'Super administrador',
+    },
+    create: {
+      email: emailRaw,
+      name: 'Super administrador',
+      password: hash,
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
+    },
+  });
+  // eslint-disable-next-line no-console
+  console.log('Seed super admin OK:', emailRaw);
 }
 
 async function seedBrands(): Promise<Map<string, string>> {
@@ -458,6 +497,7 @@ async function main() {
   console.log('--- NekoFix seed (demo) ---');
 
   await seedUsers();
+  await seedSuperAdmin();
 
   // const [brandBySlug, categoryBySlug] = await Promise.all([
   //   seedBrands(),
@@ -490,6 +530,10 @@ async function main() {
   // eslint-disable-next-line no-console
   console.log(
     `Cliente demo: cliente@nekofix.local (SEED_CLIENT_PASSWORD o Cliente123!)`,
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    'Super admin: definir SUPER_ADMIN_EMAIL (+ SUPER_ADMIN_PASSWORD) y ejecutar seed para crear/promover.',
   );
   // eslint-disable-next-line no-console
   // console.log(

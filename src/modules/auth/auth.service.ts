@@ -48,8 +48,15 @@ export class AuthService {
     };
   }
 
-  private mapRole(role: UserRole): 'ADMINISTRADOR' | 'CLIENTE' {
-    return role === UserRole.ADMIN ? 'ADMINISTRADOR' : 'CLIENTE';
+  private mapRole(
+    role: UserRole,
+  ):
+    | 'SUPER_ADMINISTRADOR'
+    | 'ADMINISTRADOR'
+    | 'CLIENTE' {
+    if (role === UserRole.SUPER_ADMIN) return 'SUPER_ADMINISTRADOR';
+    if (role === UserRole.ADMIN) return 'ADMINISTRADOR';
+    return 'CLIENTE';
   }
 
   private resolveTokenExpirySeconds(): number {
