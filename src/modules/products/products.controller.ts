@@ -31,6 +31,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { isUuidString } from '../../common/utils/is-uuid-string';
 import { ProductsService } from './products.service';
 import { CloudinaryService } from '../../common/services/cloudinary.service';
+import { hasStaffCatalogAccess } from '../../common/utils/user-role.util';
 
 type UploadedProductImage = {
   buffer: Buffer;
@@ -59,7 +60,7 @@ export class ProductsController {
     @Query() query: QueryProductDto,
     @Req() req: Request & { user?: JwtUserPayload },
   ) {
-    const isAdmin = req.user?.role === UserRole.ADMIN;
+    const isAdmin = hasStaffCatalogAccess(req.user?.role);
     return this.productsService.findAll(query, { includeUnpublished: !!isAdmin });
   }
 
@@ -80,7 +81,7 @@ export class ProductsController {
     @Param('slug') slug: string,
     @Req() req: Request & { user?: JwtUserPayload },
   ) {
-    const isAdmin = req.user?.role === UserRole.ADMIN;
+    const isAdmin = hasStaffCatalogAccess(req.user?.role);
     return this.productsService.findBySlug(slug, {
       includeUnpublished: !!isAdmin,
     });
@@ -119,7 +120,7 @@ export class ProductsController {
     @Param('id') idOrSlug: string,
     @Req() req: Request & { user?: JwtUserPayload },
   ) {
-    const isAdmin = req.user?.role === UserRole.ADMIN;
+    const isAdmin = hasStaffCatalogAccess(req.user?.role);
     const segment = idOrSlug.trim();
 
     if (isUuidString(segment)) {
