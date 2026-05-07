@@ -16,6 +16,7 @@ import { PhoneModelsModule } from './modules/phone-models/phone-models.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { GoogleReviewsModule } from './modules/google-reviews/google-reviews.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -36,6 +37,7 @@ import { AppController } from './app.controller';
     LeadsModule,
     DashboardModule,
     GoogleReviewsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
