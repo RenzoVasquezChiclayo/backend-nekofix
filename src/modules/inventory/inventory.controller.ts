@@ -15,8 +15,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Message } from '../../common/decorators/message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { InventoryMoveDto } from './dto/inventory-move.dto';
+import { QueryInventoryHistoryDto } from './dto/query-inventory-history.dto';
 import { InventoryService } from './inventory.service';
 
 @Controller('inventory')
@@ -35,17 +35,26 @@ export class InventoryController {
   @Message('Historial de inventario obtenido')
   historyByProductId(
     @Param('productId', ParseUUIDPipe) productId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: QueryInventoryHistoryDto,
   ) {
-    return this.inventoryService.history(productId, query);
+    return this.inventoryService.findProductHistory(productId, query);
   }
 
   @Get('history/:productId')
   @Message('Historial de inventario obtenido')
   history(
     @Param('productId') productId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: QueryInventoryHistoryDto,
   ) {
-    return this.inventoryService.history(productId, query);
+    return this.inventoryService.findProductHistory(productId, query);
+  }
+
+  @Get(':productId/history')
+  @Message('Historial de inventario obtenido')
+  historyRestStyle(
+    @Param('productId') productId: string,
+    @Query() query: QueryInventoryHistoryDto,
+  ) {
+    return this.inventoryService.findProductHistory(productId, query);
   }
 }

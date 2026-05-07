@@ -42,6 +42,13 @@ enum ExternalReviewSource {
   INTERNAL
 }
 
+enum LeadStatus {
+  PENDING
+  CONTACTED
+  SOLD
+  CANCELLED
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -53,6 +60,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   inventoryMovements InventoryMovement[]
+  confirmedLeads     Lead[]              @relation("LeadConfirmedBy")
 }
 
 model Brand {
@@ -162,11 +170,22 @@ model InventoryMovement {
 }
 
 model Lead {
-  id        String   @id @default(uuid())
-  products  Json
-  total     Decimal  @db.Decimal(12, 2)
-  phone     String?
-  createdAt DateTime @default(now())
+  id           String      @id @default(uuid())
+  products     Json
+  total        Decimal     @db.Decimal(12, 2)
+  phone        String?
+  customerName String?
+  notes        String?
+  status       LeadStatus  @default(PENDING)
+  confirmedById String?
+  confirmedBy  User?       @relation("LeadConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  soldAt       DateTime?
+  cancelledAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 /// Reseñas agregadas desde fuentes externas (Google, Trustpilot, etc.).

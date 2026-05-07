@@ -5,11 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InventoryMovementType } from '@prisma/client';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { isUuidString } from '../../common/utils/is-uuid-string';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryMoveDto } from './dto/inventory-move.dto';
+import { QueryInventoryHistoryDto } from './dto/query-inventory-history.dto';
 
 @Injectable()
 export class InventoryService {
@@ -94,16 +94,19 @@ export class InventoryService {
     }
   }
 
-  async history(productIdOrSlug: string, query: PaginationQueryDto) {
+  async findProductHistory(
+    productIdOrSlug: string,
+    query: QueryInventoryHistoryDto,
+  ) {
     const segment = productIdOrSlug.trim();
     let product = await this.prisma.product.findUnique({
       where: { id: segment },
-      select: { id: true },
+      select: { id: true, name: true, sku: true, slug: true, stock: true },
     });
     if (!product) {
       product = await this.prisma.product.findUnique({
         where: { slug: segment },
-        select: { id: true },
+        select: { id: true, name: true, sku: true, slug: true, stock: true },
       });
       if (product && !isUuidString(segment)) {
         this.logger.warn(
@@ -123,6 +126,7 @@ export class InventoryService {
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
+    const sortOrder = query.sortOrder ?? 'desc';
     const where = { productId: product.id };
 
     const [rows, total] = await Promise.all([
@@ -130,10 +134,13 @@ export class InventoryService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: sortOrder },
         include: {
           createdBy: {
             select: { id: true, name: true, email: true, role: true },
+          },
+          product: {
+            select: { id: true, name: true, sku: true, slug: true },
           },
         },
       }),
@@ -141,5 +148,10 @@ export class InventoryService {
     ]);
 
     return createPaginatedResponse(rows, page, limit, total);
+  }
+
+  /** Compatibilidad con consumidores existentes. */
+  async history(productIdOrSlug: string, query: QueryInventoryHistoryDto) {
+    return this.findProductHistory(productIdOrSlug, query);
   }
 }
