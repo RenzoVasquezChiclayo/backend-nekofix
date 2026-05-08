@@ -24,7 +24,10 @@ export function resolveDateRange(input: {
     throw new BadRequestException('startDate no puede ser mayor a endDate');
   }
 
-  const preset = input.preset ?? '30d';
+  let preset = input.preset;
+  if (!preset) {
+    preset = '30d';
+  }
 
   if (preset === 'custom') {
     if (providedStart && providedEnd) {

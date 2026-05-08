@@ -4,7 +4,6 @@ import { Message } from '../../common/decorators/message.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { InventoryReportQueryDto } from './dto/inventory-report-query.dto';
 import { ReportDateRangeDto } from './dto/report-date-range.dto';
 import { ReportsService } from './reports.service';
 
@@ -17,42 +16,90 @@ export class ReportsController {
   @Get('dashboard')
   @Message('Métricas de dashboard obtenidas')
   dashboard(@Query() query: ReportDateRangeDto) {
-    if (process.env.NODE_ENV !== 'production') console.log('[reports]', query);
-    return this.reportsService.dashboard(query);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[reports query]', query);
+      console.log('[preset]', query.preset);
+    }
+    try {
+      return this.reportsService.dashboard(query);
+    } catch (error) {
+      console.error('[reports error]', error);
+      throw error;
+    }
   }
 
   @Get('sales/monthly')
   @Message('Ventas mensuales obtenidas')
   salesMonthly(@Query() query: ReportDateRangeDto) {
-    if (process.env.NODE_ENV !== 'production') console.log('[reports]', query);
-    return this.reportsService.salesMonthly(query);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[reports query]', query);
+      console.log('[preset]', query.preset);
+    }
+    try {
+      return this.reportsService.salesMonthly(query);
+    } catch (error) {
+      console.error('[reports error]', error);
+      throw error;
+    }
   }
 
   @Get('leads/status')
   @Message('Conteo de leads por estado obtenido')
   leadsByStatus(@Query() query: ReportDateRangeDto) {
-    if (process.env.NODE_ENV !== 'production') console.log('[reports]', query);
-    return this.reportsService.leadsByStatus(query);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[reports query]', query);
+      console.log('[preset]', query.preset);
+    }
+    try {
+      return this.reportsService.leadsByStatus(query);
+    } catch (error) {
+      console.error('[reports error]', error);
+      throw error;
+    }
   }
 
   @Get('products/top-selling')
   @Message('Productos más vendidos obtenidos')
   topSellingProducts(@Query() query: ReportDateRangeDto) {
-    if (process.env.NODE_ENV !== 'production') console.log('[reports]', query);
-    return this.reportsService.topSellingProducts(query);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[reports query]', query);
+      console.log('[preset]', query.preset);
+    }
+    try {
+      return this.reportsService.topSellingProducts(query);
+    } catch (error) {
+      console.error('[reports error]', error);
+      throw error;
+    }
   }
 
   @Get('inventory/summary')
   @Message('Resumen de inventario obtenido')
-  inventorySummary(@Query() query: InventoryReportQueryDto) {
-    if (process.env.NODE_ENV !== 'production') console.log('[reports]', query);
-    return this.reportsService.inventorySummary(query);
+  inventorySummary(@Query() query: ReportDateRangeDto) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[reports query]', query);
+      console.log('[preset]', query.preset);
+    }
+    try {
+      return this.reportsService.inventorySummary(query);
+    } catch (error) {
+      console.error('[reports error]', error);
+      throw error;
+    }
   }
 
   @Get('inventory/low-stock')
   @Message('Productos con stock bajo obtenidos')
-  inventoryLowStock(@Query() query: InventoryReportQueryDto) {
-    if (process.env.NODE_ENV !== 'production') console.log('[reports]', query);
-    return this.reportsService.inventoryLowStock(query);
+  inventoryLowStock(@Query() query: ReportDateRangeDto) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[reports query]', query);
+      console.log('[preset]', query.preset);
+    }
+    try {
+      return this.reportsService.inventoryLowStock(query);
+    } catch (error) {
+      console.error('[reports error]', error);
+      throw error;
+    }
   }
 }
