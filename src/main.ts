@@ -59,7 +59,7 @@
 // }
 
 // bootstrap();
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -114,6 +114,21 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      exceptionFactory: (validationErrors) => {
+        const details = validationErrors.map((error) => ({
+          property: error.property,
+          value: error.value,
+          constraints: error.constraints,
+        }));
+        console.error('[VALIDATION ERROR]', JSON.stringify(details));
+        return new BadRequestException(
+          details
+            .map((d) =>
+              d.constraints ? Object.values(d.constraints) : ['Error de validación'],
+            )
+            .flat(),
+        );
+      },
     }),
   );
 
