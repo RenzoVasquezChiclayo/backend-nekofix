@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LeadStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { InventoryReportQueryDto } from './dto/inventory-report-query.dto';
 import { ReportDateRangeDto } from './dto/report-date-range.dto';
 import { toNumber } from './serializers/reports.serializer';
 import { resolveDateRange, toPrismaDateRange } from './utils/date-range.util';
@@ -186,7 +185,7 @@ export class ReportsService {
     });
   }
 
-  async inventorySummary(query: InventoryReportQueryDto) {
+  async inventorySummary(query: ReportDateRangeDto) {
     const range = resolveDateRange(query);
     const productWhere: Prisma.ProductWhereInput = {
       createdAt: toPrismaDateRange(range),
@@ -220,9 +219,9 @@ export class ReportsService {
     };
   }
 
-  async inventoryLowStock(query: InventoryReportQueryDto) {
+  async inventoryLowStock(query: ReportDateRangeDto) {
     const range = resolveDateRange(query);
-    const limit = Math.min(query.limit ?? 20, 20);
+    const limit = 20;
 
     const rows = await this.prisma.$queryRaw<
       Array<{
