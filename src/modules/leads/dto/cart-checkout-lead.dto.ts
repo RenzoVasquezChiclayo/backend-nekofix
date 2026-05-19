@@ -7,9 +7,11 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PRODUCT_COLOR_HEX_PATTERN } from '../../../common/utils/product-color.util';
 
 export class LeadProductItemDto {
   @IsString()
@@ -41,6 +43,13 @@ export class LeadProductItemDto {
   @IsOptional()
   @IsString()
   color?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(PRODUCT_COLOR_HEX_PATTERN, {
+    message: 'colorHex debe ser un color HEX válido (#RGB o #RRGGBB)',
+  })
+  colorHex?: string;
 
   @IsEnum(ProductCondition)
   condition: ProductCondition;

@@ -1,5 +1,8 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { normalizeProductColor } from './product-color.util';
+import {
+  normalizeProductColor,
+  normalizeProductColorHex,
+} from './product-color.util';
 
 export function decimalToNumber(
   value: Decimal | null | undefined,
@@ -17,6 +20,11 @@ export function serializeProduct<T extends Record<string, unknown>>(
     p.comparePrice = decimalToNumber(p.comparePrice as Decimal);
   if (typeof p.color === 'string') {
     p.color = normalizeProductColor(p.color);
+  }
+  if (p.colorHex === null || p.colorHex === undefined) {
+    /* sin cambio */
+  } else if (typeof p.colorHex === 'string') {
+    p.colorHex = normalizeProductColorHex(p.colorHex);
   }
   if (Array.isArray(p.productImages)) {
     p.productImages = (

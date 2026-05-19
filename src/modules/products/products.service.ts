@@ -10,7 +10,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { normalizeProductColor } from '../../common/utils/product-color.util';
+import {
+  normalizeProductColor,
+  normalizeProductColorHex,
+} from '../../common/utils/product-color.util';
 import { normalizeProductImagesForWrite } from './utils/product-images.util';
 import {
   resolveGradeForCreate,
@@ -167,6 +170,7 @@ export class ProductsService {
 
     const grade = resolveGradeForCreate(data.type, data.grade);
     const color = normalizeProductColor(data.color);
+    const colorHex = normalizeProductColorHex(data.colorHex);
 
     const created = await this.prisma.product.create({
       data: {
@@ -185,6 +189,7 @@ export class ProductsService {
         modelId: data.modelId,
         storage: data.storage,
         color,
+        colorHex,
         batteryHealth: data.batteryHealth,
         grade,
         isFeatured: data.isFeatured ?? false,
@@ -215,9 +220,16 @@ export class ProductsService {
       throw new NotFoundException('Producto no encontrado');
     }
 
-    const { images, grade: gradeFromDto, color: colorFromDto, ...rest } = dto;
+    const {
+      images,
+      grade: gradeFromDto,
+      color: colorFromDto,
+      colorHex: colorHexFromDto,
+      ...rest
+    } = dto;
     const gradeSent = Object.prototype.hasOwnProperty.call(dto, 'grade');
     const colorSent = Object.prototype.hasOwnProperty.call(dto, 'color');
+    const colorHexSent = Object.prototype.hasOwnProperty.call(dto, 'colorHex');
     const nextType = dto.type ?? existing.type;
     const mergedGrade = resolveGradeForUpdate(
       nextType,
@@ -230,6 +242,9 @@ export class ProductsService {
       ...(rest as Prisma.ProductUpdateInput),
       grade: mergedGrade,
       ...(colorSent ? { color: normalizeProductColor(colorFromDto) } : {}),
+      ...(colorHexSent
+        ? { colorHex: normalizeProductColorHex(colorHexFromDto) }
+        : {}),
     };
 
     if (images === undefined) {

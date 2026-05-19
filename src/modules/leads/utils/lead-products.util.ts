@@ -9,6 +9,7 @@ export type LeadProductItem = {
   price: number;
   storage?: string;
   color?: string;
+  colorHex?: string;
   condition?: string;
 };
 
@@ -62,6 +63,7 @@ export function parseLeadProducts(productsJson: Prisma.JsonValue): LeadProductIt
       price,
       storage: typeof row.storage === 'string' ? row.storage : undefined,
       color: typeof row.color === 'string' ? row.color : undefined,
+      colorHex: typeof row.colorHex === 'string' ? row.colorHex : undefined,
       condition: typeof row.condition === 'string' ? row.condition : undefined,
     });
   }

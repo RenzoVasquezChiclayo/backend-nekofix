@@ -17,6 +17,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { PRODUCT_COLOR_HEX_PATTERN } from '../../../common/utils/product-color.util';
 import { CreateProductImageDto } from './create-product-image.dto';
 
 export class CreateProductDto {
@@ -88,7 +89,22 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  color?: string;
+  color?: string | null;
+
+  /** Color visual en HEX (#RGB o #RRGGBB). Opcional; se normaliza en el servicio. */
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    const t = String(value).trim();
+    if (t === '') return null;
+    return t;
+  })
+  @IsString()
+  @Matches(PRODUCT_COLOR_HEX_PATTERN, {
+    message: 'colorHex debe ser un color HEX válido (#RGB o #RRGGBB)',
+  })
+  colorHex?: string | null;
 
   @IsOptional()
   @IsInt()

@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -120,6 +121,7 @@ model Product {
   model          PhoneModel?       @relation(fields: [modelId], references: [id], onDelete: SetNull)
   storage        String?
   color          String?
+  colorHex       String?
   batteryHealth  Int?
   grade          String?
   isFeatured     Boolean           @default(false)

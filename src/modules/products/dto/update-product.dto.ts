@@ -1,6 +1,7 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { Transform } from 'class-transformer';
-import { IsIn, IsOptional, ValidateIf } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches, ValidateIf } from 'class-validator';
+import { PRODUCT_COLOR_HEX_PATTERN } from '../../../common/utils/product-color.util';
 import { CreateProductDto } from './create-product.dto';
 
 /**
@@ -10,6 +11,24 @@ import { CreateProductDto } from './create-product.dto';
 export class UpdateProductDto extends PartialType(
   OmitType(CreateProductDto, ['grade'] as const),
 ) {
+  /**
+   * Declarado explícitamente: `PartialType` + `@ValidateIf` en el padre
+   * impedían el whitelist de `forbidNonWhitelisted`.
+   */
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    const t = String(value).trim();
+    if (t === '') return null;
+    return t;
+  })
+  @IsString()
+  @Matches(PRODUCT_COLOR_HEX_PATTERN, {
+    message: 'colorHex debe ser un color HEX válido (#RGB o #RRGGBB)',
+  })
+  colorHex?: string | null;
+
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => {
     if (value === undefined) {
