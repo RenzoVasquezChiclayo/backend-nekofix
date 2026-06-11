@@ -1,6 +1,13 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { Transform } from 'class-transformer';
-import { IsIn, IsOptional, IsString, Matches, ValidateIf } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  ValidateIf,
+} from 'class-validator';
 import { PRODUCT_COLOR_HEX_PATTERN } from '../../../common/utils/product-color.util';
 import { CreateProductDto } from './create-product.dto';
 
@@ -49,4 +56,31 @@ export class UpdateProductDto extends PartialType(
   )
   @IsIn(['A+', 'A', 'B'], { message: 'El grado debe ser A+, A o B.' })
   grade?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return value;
+  })
+  @IsUUID()
+  conditionId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return value;
+  })
+  @IsUUID()
+  gradeId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return value;
+  })
+  @IsUUID()
+  seriesId?: string | null;
 }

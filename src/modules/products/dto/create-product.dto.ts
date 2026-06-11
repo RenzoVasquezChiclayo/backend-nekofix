@@ -1,4 +1,9 @@
-import { ProductCondition, ProductType } from '@prisma/client';
+import {
+  ProductCatalogType,
+  ProductCondition,
+  ProductStatus,
+  ProductType,
+} from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -10,6 +15,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -54,8 +60,22 @@ export class CreateProductDto {
   @IsEnum(ProductType)
   type: ProductType;
 
+  /** Segmento de catálogo (DEVICE, SPARE_PART, ACCESSORY). Opcional: default DEVICE en servicio. */
+  @IsOptional()
+  @IsEnum(ProductCatalogType)
+  catalogType?: ProductCatalogType;
+
   @IsEnum(ProductCondition)
   condition: ProductCondition;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return value;
+  })
+  @IsUUID()
+  conditionId?: string | null;
 
   @IsOptional()
   @IsInt()
@@ -135,6 +155,24 @@ export class CreateProductDto {
   grade?: string;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return value;
+  })
+  @IsUUID()
+  gradeId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return value;
+  })
+  @IsUUID()
+  seriesId?: string | null;
+
+  @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   isFeatured?: boolean;
@@ -143,6 +181,10 @@ export class CreateProductDto {
   @IsBoolean()
   @Type(() => Boolean)
   isPublished?: boolean;
+
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
 
   @IsOptional()
   @IsString()

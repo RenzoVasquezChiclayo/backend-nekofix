@@ -1,4 +1,9 @@
-import { ProductCondition, ProductType } from '@prisma/client';
+import {
+  ProductCatalogType,
+  ProductCondition,
+  ProductStatus,
+  ProductType,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
 import { Transform } from 'class-transformer';
 import {
@@ -66,6 +71,16 @@ export class QueryProductDto {
   @IsEnum(ProductType)
   type?: ProductType;
 
+  /** Filtro por segmento de catálogo. Ej.: `?catalogType=DEVICE` o `?catalogType=SPARE_PART` */
+  @IsOptional()
+  @IsEnum(ProductCatalogType)
+  catalogType?: ProductCatalogType;
+
+  /** Excluir un segmento de catálogo. Ej.: `?excludeCatalogType=SPARE_PART` → DEVICE + ACCESSORY */
+  @IsOptional()
+  @IsEnum(ProductCatalogType)
+  excludeCatalogType?: ProductCatalogType;
+
   /** Filtro por `grade` almacenado (A+, A, B). Ej.: `?grade=A` o `grade=A%2B` */
   @IsOptional()
   @Transform(({ value }) => {
@@ -94,4 +109,9 @@ export class QueryProductDto {
   @IsOptional()
   @Type(() => Boolean)
   isFeatured?: boolean;
+
+  /** Filtro administrativo por estado de producto. */
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
 }

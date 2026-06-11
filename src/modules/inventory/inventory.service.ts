@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InventoryMovementType } from '@prisma/client';
+import { buildProductStockUpdateData } from '../../common/utils/product-status.util';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { isUuidString } from '../../common/utils/is-uuid-string';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -58,7 +59,7 @@ export class InventoryService {
 
       await tx.product.update({
         where: { id: dto.productId },
-        data: { stock: newStock },
+        data: buildProductStockUpdateData(product.status, newStock),
       });
 
       return created;

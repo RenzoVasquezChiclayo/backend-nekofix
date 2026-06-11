@@ -20,6 +20,18 @@ enum ProductType {
   ACCESSORY
 }
 
+enum ProductCatalogType {
+  DEVICE
+  SPARE_PART
+  ACCESSORY
+}
+
+enum ProductStatus {
+  ACTIVE
+  OUT_OF_STOCK
+  HIDDEN
+}
+
 enum ProductCondition {
   NEW
   SEMINUEVO
@@ -72,19 +84,80 @@ model Brand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  models   PhoneModel[]
-  products Product[]
+  models      PhoneModel[]
+  phoneSeries PhoneSeries[]
+  products    Product[]
 }
 
 model Category {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  icon      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String             @id @default(uuid())
+  name        String
+  slug        String             @unique
+  icon        String?
+  catalogType ProductCatalogType @default(DEVICE)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   products Product[]
+
+  @@index([catalogType])
+}
+
+model PhoneSeries {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  models   PhoneModel[]
+  products Product[]
+
+  @@index([brandId])
+  @@index([isActive])
+}
+
+/// Condiciones administrables. Tabla física `product_conditions_catalog` (evita conflicto con enum `ProductCondition`).
+model ProductConditionCatalog {
+  id          String             @id @default(uuid())
+  name        String
+  slug        String
+  description String?
+  catalogType ProductCatalogType
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  products Product[]
+
+  @@unique([slug, catalogType])
+  @@index([catalogType])
+  @@index([isActive])
+  @@map("product_conditions_catalog")
+}
+
+/// Grados administrables. Tabla física `product_grades_catalog` (evita conflictos con tipos legacy).
+model ProductGrade {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  catalogType ProductCatalogType
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  products Product[]
+
+  @@unique([name, catalogType])
+  @@index([catalogType])
+  @@index([isActive])
+  @@map("product_grades_catalog")
 }
 
 model PhoneModel {
@@ -93,12 +166,15 @@ model PhoneModel {
   slug      String   @unique
   brandId   String
   brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  seriesId  String?
+  series    PhoneSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   products Product[]
 
   @@index([brandId])
+  @@index([seriesId])
 }
 
 model Product {
@@ -110,7 +186,10 @@ model Product {
   price          Decimal           @db.Decimal(12, 2)
   comparePrice   Decimal?          @db.Decimal(12, 2)
   type           ProductType
+  catalogType    ProductCatalogType @default(DEVICE)
   condition      ProductCondition
+  conditionId    String?
+  conditionRef   ProductConditionCatalog? @relation(fields: [conditionId], references: [id], onDelete: SetNull)
   stock          Int               @default(0)
   minStock       Int               @default(0)
   brandId        String
@@ -124,8 +203,13 @@ model Product {
   colorHex       String?
   batteryHealth  Int?
   grade          String?
+  gradeId        String?
+  gradeRef       ProductGrade?     @relation(fields: [gradeId], references: [id], onDelete: SetNull)
+  seriesId       String?
+  series         PhoneSeries?      @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   isFeatured     Boolean           @default(false)
   isPublished    Boolean           @default(false)
+  status         ProductStatus     @default(ACTIVE)
   seoTitle       String?
   seoDescription String?
   createdAt      DateTime          @default(now())
@@ -136,8 +220,13 @@ model Product {
 
   @@index([brandId])
   @@index([categoryId])
+  @@index([catalogType])
+  @@index([conditionId])
+  @@index([gradeId])
+  @@index([seriesId])
   @@index([isPublished])
   @@index([isFeatured])
+  @@index([status])
 }
 
 model ProductImage {

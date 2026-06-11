@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LeadStatus, Prisma } from '@prisma/client';
+import { LeadStatus, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ReportDateRangeDto } from './dto/report-date-range.dto';
 import { toNumber } from './serializers/reports.serializer';
@@ -26,16 +26,27 @@ export class ReportsService {
     const [
       totalProducts,
       totalPublishedProducts,
+      activeProducts,
+      outOfStockProducts,
+      hiddenProducts,
       totalLeads,
       pendingLeads,
       soldLeads,
       cancelledLeads,
-      outOfStockProducts,
       salesAggregate,
       lowStockRows,
     ] = await Promise.all([
       this.prisma.product.count({ where: productWhere }),
       this.prisma.product.count({ where: { ...productWhere, isPublished: true } }),
+      this.prisma.product.count({
+        where: { ...productWhere, status: ProductStatus.ACTIVE },
+      }),
+      this.prisma.product.count({
+        where: { ...productWhere, status: ProductStatus.OUT_OF_STOCK },
+      }),
+      this.prisma.product.count({
+        where: { ...productWhere, status: ProductStatus.HIDDEN },
+      }),
       this.prisma.lead.count({ where: leadWhere }),
       this.prisma.lead.count({
         where: { ...leadWhere, status: LeadStatus.PENDING },
@@ -44,7 +55,6 @@ export class ReportsService {
       this.prisma.lead.count({
         where: { ...leadWhere, status: LeadStatus.CANCELLED },
       }),
-      this.prisma.product.count({ where: { ...productWhere, stock: 0 } }),
       this.prisma.lead.aggregate({
         where: soldWhere,
         _sum: { total: true },
@@ -74,8 +84,10 @@ export class ReportsService {
       soldLeads,
       conversionRate,
       publishedProducts: totalPublishedProducts,
-      lowStockProducts: Number(lowStockRows[0]?.count ?? 0),
+      activeProducts,
       outOfStockProducts,
+      hiddenProducts,
+      lowStockProducts: Number(lowStockRows[0]?.count ?? 0),
       totalRevenue: totalSalesAmount,
     };
   }
@@ -190,10 +202,25 @@ export class ReportsService {
     const productWhere: Prisma.ProductWhereInput = {
       createdAt: toPrismaDateRange(range),
     };
-    const [totalProducts, outOfStockProducts, totalUnitsAgg, inventoryValueAgg, lowRows] =
-      await Promise.all([
+    const [
+      totalProducts,
+      activeProducts,
+      outOfStockProducts,
+      hiddenProducts,
+      totalUnitsAgg,
+      inventoryValueAgg,
+      lowRows,
+    ] = await Promise.all([
         this.prisma.product.count({ where: productWhere }),
-        this.prisma.product.count({ where: { ...productWhere, stock: 0 } }),
+        this.prisma.product.count({
+          where: { ...productWhere, status: ProductStatus.ACTIVE },
+        }),
+        this.prisma.product.count({
+          where: { ...productWhere, status: ProductStatus.OUT_OF_STOCK },
+        }),
+        this.prisma.product.count({
+          where: { ...productWhere, status: ProductStatus.HIDDEN },
+        }),
         this.prisma.product.aggregate({ where: productWhere, _sum: { stock: true } }),
         this.prisma.$queryRaw<Array<{ value: Prisma.Decimal | null }>>(Prisma.sql`
           SELECT COALESCE(SUM("price" * "stock"), 0)::numeric AS value
@@ -212,6 +239,9 @@ export class ReportsService {
 
     return {
       totalProducts,
+      activeProducts,
+      outOfStockProducts,
+      hiddenProducts,
       totalStockUnits: totalUnitsAgg._sum.stock ?? 0,
       inventoryValue: toNumber(inventoryValueAgg[0]?.value),
       lowStockCount: Number(lowRows[0]?.count ?? 0),

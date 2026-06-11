@@ -1,6 +1,7 @@
 import { ProductCatalogType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsIn,
   IsInt,
@@ -10,7 +11,7 @@ import {
   Min,
 } from 'class-validator';
 
-export class QueryCategoryDto {
+export class QueryProductGradeDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -28,24 +29,18 @@ export class QueryCategoryDto {
   @IsString()
   search?: string;
 
-  /** Filtro exacto por slug de categoría. */
   @IsOptional()
-  @IsString()
-  slug?: string;
+  @Type(() => Boolean)
+  @IsBoolean()
+  isActive?: boolean;
 
-  /** @deprecated Preferir `slug`. Alias legacy usado por algunos paneles. */
-  @IsOptional()
-  @IsString()
-  category?: string;
-
-  /** Filtro por segmento de catálogo. Ej.: `?catalogType=SPARE_PART` */
   @IsOptional()
   @IsEnum(ProductCatalogType)
   catalogType?: ProductCatalogType;
 
   @IsOptional()
-  @IsIn(['createdAt', 'name'])
-  sortBy?: 'createdAt' | 'name';
+  @IsIn(['createdAt', 'name', 'sortOrder'])
+  sortBy?: 'createdAt' | 'name' | 'sortOrder';
 
   @IsOptional()
   @IsIn(['asc', 'desc'])

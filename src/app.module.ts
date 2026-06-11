@@ -13,6 +13,9 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { PhoneModelsModule } from './modules/phone-models/phone-models.module';
+import { PhoneSeriesModule } from './modules/phone-series/phone-series.module';
+import { ProductConditionsModule } from './modules/product-conditions/product-conditions.module';
+import { ProductGradesModule } from './modules/product-grades/product-grades.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { GoogleReviewsModule } from './modules/google-reviews/google-reviews.module';
@@ -33,6 +36,9 @@ import { AppController } from './app.controller';
     CategoriesModule,
     ProductsModule,
     PhoneModelsModule,
+    PhoneSeriesModule,
+    ProductConditionsModule,
+    ProductGradesModule,
     InventoryModule,
     LeadsModule,
     DashboardModule,

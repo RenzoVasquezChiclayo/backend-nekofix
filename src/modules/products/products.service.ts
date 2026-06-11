@@ -1,5 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { resolveLegacyBrandCategoryModelFilters } from '../../common/utils/resolve-legacy-admin-filters';
 import {
@@ -19,11 +24,25 @@ import {
   resolveGradeForCreate,
   resolveGradeForUpdate,
 } from './utils/product-grade.util';
+import { resolveCatalogTypeForCreate } from './utils/product-catalog-type.util';
+import { assertCategoryMatchesProductCatalogType } from './utils/product-category.util';
+import { assertProductMetadataMatchesCatalogType } from './utils/product-metadata.util';
+import {
+  PUBLIC_PRODUCT_STATUSES,
+  resolveStatusAfterStockChange,
+} from '../../common/utils/product-status.util';
 
 const productInclude = {
   brand: true,
   category: true,
   model: true,
+  series: {
+    include: {
+      brand: { select: { id: true, name: true, slug: true, logo: true } },
+    },
+  },
+  conditionRef: true,
+  gradeRef: true,
   productImages: {
     orderBy: { sortOrder: 'asc' as const },
   },
@@ -66,7 +85,15 @@ export class ProductsService {
     });
 
     const where: Prisma.ProductWhereInput = {
-      ...(!options.includeUnpublished ? { isPublished: true } : {}),
+      ...(!options.includeUnpublished
+        ? {
+            isPublished: true,
+            status: { in: PUBLIC_PRODUCT_STATUSES },
+          }
+        : {}),
+      ...(options.includeUnpublished && query.status
+        ? { status: query.status }
+        : {}),
       ...(query.id ? { id: query.id } : {}),
       ...(filters.legacySlugNotFound ? { id: { in: [] } } : {}),
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
@@ -74,6 +101,11 @@ export class ProductsService {
       ...(filters.modelId ? { modelId: filters.modelId } : {}),
       ...(query.condition ? { condition: query.condition } : {}),
       ...(query.type ? { type: query.type } : {}),
+      ...(query.catalogType
+        ? { catalogType: query.catalogType }
+        : query.excludeCatalogType
+          ? { catalogType: { not: query.excludeCatalogType } }
+          : {}),
       ...(query.grade ? { grade: query.grade } : {}),
       ...(featured !== undefined
         ? { isFeatured: featured }
@@ -115,6 +147,7 @@ export class ProductsService {
       where: {
         isFeatured: true,
         isPublished: true,
+        status: { in: PUBLIC_PRODUCT_STATUSES },
       },
       orderBy: { createdAt: 'desc' },
       include: productInclude,
@@ -131,9 +164,9 @@ export class ProductsService {
       this.logger.warn(`Producto no encontrado por slug: ${slug}`);
       throw new NotFoundException('Producto no encontrado');
     }
-    if (!product.isPublished && !options.includeUnpublished) {
+    if (!this.isPubliclyVisible(product, options.includeUnpublished)) {
       this.logger.warn(
-        `Producto ${product.id} no publicado: acceso por slug denegado sin permisos de administrador`,
+        `Producto ${product.id} no visible en catálogo público: acceso por slug denegado`,
       );
       throw new NotFoundException('Producto no encontrado');
     }
@@ -153,9 +186,9 @@ export class ProductsService {
       this.logger.warn(`Producto no encontrado por ID: ${id}`);
       throw new NotFoundException('Producto no encontrado');
     }
-    if (!product.isPublished && !options.includeUnpublished) {
+    if (!this.isPubliclyVisible(product, options.includeUnpublished)) {
       this.logger.warn(
-        `Producto no encontrado por ID (borrador sin JWT admin): ${id}`,
+        `Producto no encontrado por ID (no visible sin JWT admin): ${id}`,
       );
       throw new NotFoundException('Producto no encontrado');
     }
@@ -169,6 +202,19 @@ export class ProductsService {
       : [];
 
     const grade = resolveGradeForCreate(data.type, data.grade);
+    const catalogType = resolveCatalogTypeForCreate(
+      data.catalogType,
+      data.type,
+    );
+    const category = await this.requireCategory(data.categoryId);
+    assertCategoryMatchesProductCatalogType(category, catalogType);
+    await assertProductMetadataMatchesCatalogType(this.prisma, catalogType, {
+      conditionId: data.conditionId,
+      gradeId: data.gradeId,
+    });
+    if (data.seriesId) {
+      await this.requireSeries(data.seriesId);
+    }
     const color = normalizeProductColor(data.color);
     const colorHex = normalizeProductColorHex(data.colorHex);
 
@@ -181,19 +227,24 @@ export class ProductsService {
         price: data.price,
         comparePrice: data.comparePrice,
         type: data.type,
+        catalogType,
         condition: data.condition,
+        conditionId: data.conditionId ?? undefined,
         stock: data.stock ?? 0,
         minStock: data.minStock ?? 0,
         brandId: data.brandId,
         categoryId: data.categoryId,
         modelId: data.modelId,
+        seriesId: data.seriesId ?? undefined,
         storage: data.storage,
         color,
         colorHex,
         batteryHealth: data.batteryHealth,
         grade,
+        gradeId: data.gradeId ?? undefined,
         isFeatured: data.isFeatured ?? false,
         isPublished: data.isPublished ?? false,
+        status: data.status ?? ProductStatus.ACTIVE,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         productImages: normalized.length
@@ -223,14 +274,62 @@ export class ProductsService {
     const {
       images,
       grade: gradeFromDto,
+      conditionId: conditionIdFromDto,
+      gradeId: gradeIdFromDto,
+      seriesId: seriesIdFromDto,
       color: colorFromDto,
       colorHex: colorHexFromDto,
+      stock: stockFromDto,
+      status: statusFromDto,
       ...rest
     } = dto;
     const gradeSent = Object.prototype.hasOwnProperty.call(dto, 'grade');
+    const conditionIdSent = Object.prototype.hasOwnProperty.call(
+      dto,
+      'conditionId',
+    );
+    const gradeIdSent = Object.prototype.hasOwnProperty.call(dto, 'gradeId');
+    const seriesIdSent = Object.prototype.hasOwnProperty.call(dto, 'seriesId');
     const colorSent = Object.prototype.hasOwnProperty.call(dto, 'color');
     const colorHexSent = Object.prototype.hasOwnProperty.call(dto, 'colorHex');
+    const stockSent = Object.prototype.hasOwnProperty.call(dto, 'stock');
+    const statusSent = Object.prototype.hasOwnProperty.call(dto, 'status');
     const nextType = dto.type ?? existing.type;
+    const catalogTypeSent = Object.prototype.hasOwnProperty.call(
+      dto,
+      'catalogType',
+    );
+    const nextCatalogType = catalogTypeSent
+      ? resolveCatalogTypeForCreate(dto.catalogType, nextType)
+      : existing.catalogType;
+    const categoryIdSent = Object.prototype.hasOwnProperty.call(
+      dto,
+      'categoryId',
+    );
+    const nextCategoryId = categoryIdSent ? dto.categoryId! : existing.categoryId;
+    if (categoryIdSent || catalogTypeSent) {
+      const category = await this.requireCategory(nextCategoryId);
+      assertCategoryMatchesProductCatalogType(category, nextCatalogType);
+    }
+    const nextConditionId = conditionIdSent
+      ? conditionIdFromDto
+      : existing.conditionId;
+    const nextGradeId = gradeIdSent ? gradeIdFromDto : existing.gradeId;
+    const nextSeriesId = seriesIdSent ? seriesIdFromDto : existing.seriesId;
+
+    if (catalogTypeSent || conditionIdSent || gradeIdSent) {
+      await assertProductMetadataMatchesCatalogType(
+        this.prisma,
+        nextCatalogType,
+        {
+          conditionId: nextConditionId,
+          gradeId: nextGradeId,
+        },
+      );
+    }
+    if (seriesIdSent && nextSeriesId) {
+      await this.requireSeries(nextSeriesId);
+    }
     const mergedGrade = resolveGradeForUpdate(
       nextType,
       gradeFromDto,
@@ -238,9 +337,28 @@ export class ProductsService {
       gradeSent,
     );
 
+    const nextStock = stockSent ? stockFromDto! : existing.stock;
+    let resolvedStatus = statusSent ? statusFromDto : existing.status;
+    if (stockSent && !statusSent) {
+      const autoStatus = resolveStatusAfterStockChange(
+        existing.status,
+        nextStock,
+      );
+      if (autoStatus !== undefined) {
+        resolvedStatus = autoStatus;
+      }
+    }
+
     const data: Prisma.ProductUpdateInput = {
       ...(rest as Prisma.ProductUpdateInput),
       grade: mergedGrade,
+      ...(stockSent ? { stock: nextStock } : {}),
+      ...(statusSent || (stockSent && resolvedStatus !== existing.status)
+        ? { status: resolvedStatus }
+        : {}),
+      ...(conditionIdSent ? { conditionId: conditionIdFromDto } : {}),
+      ...(gradeIdSent ? { gradeId: gradeIdFromDto } : {}),
+      ...(seriesIdSent ? { seriesId: seriesIdFromDto } : {}),
       ...(colorSent ? { color: normalizeProductColor(colorFromDto) } : {}),
       ...(colorHexSent
         ? { colorHex: normalizeProductColorHex(colorHexFromDto) }
@@ -290,6 +408,40 @@ export class ProductsService {
     await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });
     return { id };
+  }
+
+  private async requireSeries(seriesId: string) {
+    const series = await this.prisma.phoneSeries.findUnique({
+      where: { id: seriesId },
+      select: { id: true },
+    });
+    if (!series) {
+      throw new BadRequestException('La serie indicada no existe.');
+    }
+  }
+
+  private async requireCategory(categoryId: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { id: true, name: true, catalogType: true },
+    });
+    if (!category) {
+      throw new BadRequestException('La categoría indicada no existe.');
+    }
+    return category;
+  }
+
+  private isPubliclyVisible(
+    product: { isPublished: boolean; status: ProductStatus },
+    includeUnpublished: boolean,
+  ): boolean {
+    if (includeUnpublished) {
+      return true;
+    }
+    if (!product.isPublished) {
+      return false;
+    }
+    return PUBLIC_PRODUCT_STATUSES.includes(product.status);
   }
 
   private async ensureExists(id: string) {

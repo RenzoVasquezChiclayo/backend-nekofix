@@ -4,6 +4,7 @@
  */
 import {
   InventoryMovementType,
+  ProductCatalogType,
   ProductCondition,
   ProductType,
   UserRole,
@@ -109,16 +110,164 @@ export const SEED_BRANDS = [
 ] as const;
 
 export const SEED_CATEGORIES = [
-  { slug: 'smartphones', name: 'Smartphones', icon: 'smartphone' },
-  { slug: 'tablets', name: 'Tablets', icon: 'tablet' },
-  { slug: 'smartwatch', name: 'Smartwatch', icon: 'watch' },
-  { slug: 'audifonos', name: 'Audifonos', icon: 'headphones' },
-  { slug: 'cargadores', name: 'Cargadores', icon: 'bolt' },
-  { slug: 'fundas', name: 'Fundas', icon: 'shield' },
-  { slug: 'pantallas', name: 'Pantallas', icon: 'display' },
-  { slug: 'baterias', name: 'Baterias', icon: 'battery' },
-  { slug: 'repuestos', name: 'Repuestos', icon: 'wrench' },
-  { slug: 'accesorios', name: 'Accesorios', icon: 'cable' },
+  {
+    slug: 'smartphones',
+    name: 'Smartphones',
+    icon: 'smartphone',
+    catalogType: ProductCatalogType.DEVICE,
+  },
+  {
+    slug: 'tablets',
+    name: 'Tablets',
+    icon: 'tablet',
+    catalogType: ProductCatalogType.DEVICE,
+  },
+  {
+    slug: 'smartwatch',
+    name: 'Smartwatch',
+    icon: 'watch',
+    catalogType: ProductCatalogType.DEVICE,
+  },
+  {
+    slug: 'audifonos',
+    name: 'Audifonos',
+    icon: 'headphones',
+    catalogType: ProductCatalogType.ACCESSORY,
+  },
+  {
+    slug: 'cargadores',
+    name: 'Cargadores',
+    icon: 'bolt',
+    catalogType: ProductCatalogType.ACCESSORY,
+  },
+  {
+    slug: 'fundas',
+    name: 'Fundas',
+    icon: 'shield',
+    catalogType: ProductCatalogType.ACCESSORY,
+  },
+  {
+    slug: 'pantallas',
+    name: 'Pantallas',
+    icon: 'display',
+    catalogType: ProductCatalogType.SPARE_PART,
+  },
+  {
+    slug: 'baterias',
+    name: 'Baterias',
+    icon: 'battery',
+    catalogType: ProductCatalogType.SPARE_PART,
+  },
+  {
+    slug: 'repuestos',
+    name: 'Repuestos',
+    icon: 'wrench',
+    catalogType: ProductCatalogType.SPARE_PART,
+  },
+  {
+    slug: 'accesorios',
+    name: 'Accesorios',
+    icon: 'cable',
+    catalogType: ProductCatalogType.ACCESSORY,
+  },
+] as const;
+
+/** Condiciones por segmento de catálogo (Fase 2.1). */
+export const SEED_PRODUCT_CONDITIONS = [
+  {
+    slug: 'new',
+    name: 'Nuevo',
+    catalogType: ProductCatalogType.DEVICE,
+    sortOrder: 0,
+  },
+  {
+    slug: 'seminuevo',
+    name: 'Seminuevo',
+    catalogType: ProductCatalogType.DEVICE,
+    sortOrder: 1,
+  },
+  {
+    slug: 'refurbished',
+    name: 'Reacondicionado',
+    catalogType: ProductCatalogType.DEVICE,
+    sortOrder: 2,
+  },
+  {
+    slug: 'original',
+    name: 'Original',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 0,
+  },
+  {
+    slug: 'oem',
+    name: 'OEM',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 1,
+  },
+  {
+    slug: 'generico',
+    name: 'Genérico',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 2,
+  },
+  {
+    slug: 'pull',
+    name: 'Pull',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 3,
+  },
+  {
+    slug: 'refabricado',
+    name: 'Refabricado',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 4,
+  },
+] as const;
+
+/**
+ * Grades DEVICE: calidad estética de equipos (A+, A, B, C).
+ *
+ * Grades SPARE_PART: calidad de pieza (Original, OEM, Genérico).
+ * Decisión: se incluyen en seed para que el panel admin pueda asignarlos
+ * a repuestos; el campo legacy `grade` (string) sigue siendo opcional en productos SPARE_PART.
+ */
+export const SEED_PRODUCT_GRADES = [
+  { name: 'A+', catalogType: ProductCatalogType.DEVICE, sortOrder: 0 },
+  { name: 'A', catalogType: ProductCatalogType.DEVICE, sortOrder: 1 },
+  { name: 'B', catalogType: ProductCatalogType.DEVICE, sortOrder: 2 },
+  { name: 'C', catalogType: ProductCatalogType.DEVICE, sortOrder: 3 },
+  {
+    name: 'Original',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 0,
+  },
+  { name: 'OEM', catalogType: ProductCatalogType.SPARE_PART, sortOrder: 1 },
+  {
+    name: 'Genérico',
+    catalogType: ProductCatalogType.SPARE_PART,
+    sortOrder: 2,
+  },
+] as const;
+
+export const SEED_PHONE_SERIES = [
+  {
+    slug: 'iphone-13-series',
+    name: 'iPhone 13 Series',
+    brandSlug: 'apple',
+    description: 'Línea iPhone 13 (13, 13 mini, 13 Pro, 13 Pro Max)',
+  },
+  {
+    slug: 'iphone-14-series',
+    name: 'iPhone 14 Series',
+    brandSlug: 'apple',
+    description: 'Línea iPhone 14 (14, 14 Plus, 14 Pro, 14 Pro Max)',
+  },
+  {
+    slug: 'iphone-15-series',
+    name: 'iPhone 15 Series',
+    brandSlug: 'apple',
+    description: 'Línea iPhone 15 (15, 15 Plus, 15 Pro, 15 Pro Max)',
+  },
 ] as const;
 
 export const SEED_PHONE_MODELS = [
