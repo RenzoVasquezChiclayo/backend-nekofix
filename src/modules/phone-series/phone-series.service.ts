@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -143,7 +142,7 @@ export class PhoneSeriesService {
       select: { id: true },
     });
     if (existing && existing.id !== currentId) {
-      throw new ConflictException('Ya existe una serie con ese slug');
+      throw new BadRequestException('Ya existe una serie con ese slug.');
     }
   }
 }
