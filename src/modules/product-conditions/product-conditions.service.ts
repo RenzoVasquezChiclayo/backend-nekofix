@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -159,8 +158,8 @@ export class ProductConditionsService {
       select: { id: true },
     });
     if (existing && existing.id !== currentId) {
-      throw new ConflictException(
-        `Ya existe una condición con slug "${slug}" en el catálogo ${catalogType}.`,
+      throw new BadRequestException(
+        'Ya existe una condición con ese slug en este catálogo.',
       );
     }
   }

@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -154,8 +153,8 @@ export class ProductGradesService {
       select: { id: true },
     });
     if (existing && existing.id !== currentId) {
-      throw new ConflictException(
-        `Ya existe un grado "${name}" en el catálogo ${catalogType}.`,
+      throw new BadRequestException(
+        'Ya existe un grado con ese nombre para este catálogo.',
       );
     }
   }
