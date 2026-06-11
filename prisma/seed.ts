@@ -2,6 +2,8 @@ import {
   InventoryMovementType,
   Prisma,
   PrismaClient,
+  ProductCatalogType,
+  ProductType,
   UserRole,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -11,6 +13,9 @@ import {
   SEED_LEADS,
   SEED_MARKER,
   SEED_PHONE_MODELS,
+  SEED_PHONE_SERIES,
+  SEED_PRODUCT_CONDITIONS,
+  SEED_PRODUCT_GRADES,
   SEED_PRODUCTS,
   SEED_USERS,
   SeedMovementDef,
@@ -179,6 +184,10 @@ function productPayload(
     price: d(def.price),
     comparePrice: def.comparePrice ? d(def.comparePrice) : null,
     type: def.type,
+    catalogType:
+      def.type === ProductType.ACCESSORY
+        ? ProductCatalogType.ACCESSORY
+        : ProductCatalogType.DEVICE,
     condition: def.condition,
     stock: def.stock,
     minStock: def.minStock,
@@ -283,8 +292,13 @@ async function seedCategories(): Promise<Map<string, string>> {
     SEED_CATEGORIES.map(async (c) => {
       const row = await prisma.category.upsert({
         where: { slug: c.slug },
-        update: { name: c.name, icon: c.icon },
-        create: { name: c.name, slug: c.slug, icon: c.icon },
+        update: { name: c.name, icon: c.icon, catalogType: c.catalogType },
+        create: {
+          name: c.name,
+          slug: c.slug,
+          icon: c.icon,
+          catalogType: c.catalogType,
+        },
       });
       map.set(c.slug, row.id);
     }),
@@ -492,12 +506,101 @@ async function seedLeads(productBySlug: Map<string, { id: string }>) {
   console.log('Seed leads OK');
 }
 
+async function seedProductConditionsCatalog() {
+  await Promise.all(
+    SEED_PRODUCT_CONDITIONS.map((c) =>
+      prisma.productConditionCatalog.upsert({
+        where: {
+          slug_catalogType: { slug: c.slug, catalogType: c.catalogType },
+        },
+        update: {
+          name: c.name,
+          sortOrder: c.sortOrder,
+          catalogType: c.catalogType,
+          isActive: true,
+        },
+        create: {
+          name: c.name,
+          slug: c.slug,
+          sortOrder: c.sortOrder,
+          catalogType: c.catalogType,
+          isActive: true,
+        },
+      }),
+    ),
+  );
+  // eslint-disable-next-line no-console
+  console.log('Seed product conditions OK');
+}
+
+async function seedProductGrades() {
+  await Promise.all(
+    SEED_PRODUCT_GRADES.map((g) =>
+      prisma.productGrade.upsert({
+        where: {
+          name_catalogType: { name: g.name, catalogType: g.catalogType },
+        },
+        update: {
+          sortOrder: g.sortOrder,
+          catalogType: g.catalogType,
+          isActive: true,
+        },
+        create: {
+          name: g.name,
+          sortOrder: g.sortOrder,
+          catalogType: g.catalogType,
+          isActive: true,
+        },
+      }),
+    ),
+  );
+  // eslint-disable-next-line no-console
+  console.log('Seed product grades OK');
+}
+
+async function seedPhoneSeries() {
+  for (const s of SEED_PHONE_SERIES) {
+    const brand = await prisma.brand.findUnique({
+      where: { slug: s.brandSlug },
+      select: { id: true },
+    });
+    if (!brand) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `Seed phone series: omitida "${s.slug}" (marca ${s.brandSlug} no existe)`,
+      );
+      continue;
+    }
+    await prisma.phoneSeries.upsert({
+      where: { slug: s.slug },
+      update: {
+        name: s.name,
+        description: s.description,
+        brandId: brand.id,
+        isActive: true,
+      },
+      create: {
+        name: s.name,
+        slug: s.slug,
+        description: s.description,
+        brandId: brand.id,
+        isActive: true,
+      },
+    });
+  }
+  // eslint-disable-next-line no-console
+  console.log('Seed phone series OK');
+}
+
 async function main() {
   // eslint-disable-next-line no-console
   console.log('--- NekoFix seed (demo) ---');
 
   await seedUsers();
   await seedSuperAdmin();
+  await seedProductConditionsCatalog();
+  await seedProductGrades();
+  await seedPhoneSeries();
 
   // const [brandBySlug, categoryBySlug] = await Promise.all([
   //   seedBrands(),

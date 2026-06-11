@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InventoryMovementType, LeadStatus, Prisma } from '@prisma/client';
+import { buildProductStockUpdateData } from '../../common/utils/product-status.util';
 import { ConfigService } from '@nestjs/config';
 import { createPaginatedResponse } from '../../common/utils/paginated-response';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -119,7 +120,7 @@ export class LeadsService {
     const productIds = checkoutItems.map((item) => item.productId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, name: true, stock: true },
+      select: { id: true, name: true, stock: true, status: true },
     });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -157,7 +158,7 @@ export class LeadsService {
 
         await tx.product.update({
           where: { id: product.id },
-          data: { stock: newStock },
+          data: buildProductStockUpdateData(product.status, newStock),
         });
 
         product.stock = newStock;

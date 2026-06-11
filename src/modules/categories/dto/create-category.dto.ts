@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { ProductCatalogType } from '@prisma/client';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
@@ -15,4 +16,9 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString()
   icon?: string;
+
+  /** Segmento de catálogo (DEVICE, SPARE_PART, ACCESSORY). Opcional: default DEVICE en servicio. */
+  @IsOptional()
+  @IsEnum(ProductCatalogType)
+  catalogType?: ProductCatalogType;
 }
